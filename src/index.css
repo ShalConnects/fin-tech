@@ -1,0 +1,196 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
+@import './styles/quill-custom.css';
+@import './styles/skeleton.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --transition-duration: 0.3s;
+  }
+
+  /* Set default font family */
+  html {
+    font-family: "Manrope", sans-serif;
+  }
+
+  /* Smooth transition for dark mode */
+  * {
+    transition: background-color var(--transition-duration) ease-in-out,
+                border-color var(--transition-duration) ease-in-out,
+                color var(--transition-duration) ease-in-out;
+  }
+}
+
+/* Fade-in animation for dashboard sections */
+@layer utilities {
+  .animate-fadein {
+    animation: fadein 0.8s cubic-bezier(0.4,0,0.2,1) both;
+  }
+  .delay-100 { animation-delay: 0.1s; }
+  .delay-200 { animation-delay: 0.2s; }
+  .delay-300 { animation-delay: 0.3s; }
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Hide scrollbar for specific elements */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Custom gradient classes to replace solid blue colors */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+}
+
+.bg-gradient-primary-hover {
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+}
+
+.text-gradient-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.border-gradient-primary {
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) 1;
+}
+
+.focus-ring-gradient {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 0 0 1px rgba(139, 92, 246, 0.2);
+}
+
+/* Dark mode gradient variants */
+.dark .bg-gradient-primary {
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+}
+
+.dark .bg-gradient-primary-hover {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+}
+
+.dark .text-gradient-primary {
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .focus-ring-gradient {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1), 0 0 0 1px rgba(167, 139, 250, 0.2);
+}
+
+.unified-dropdown {
+  background-color: #f3f4f6; /* bg-gray-100 */
+  color: #374151; /* text-gray-700 */
+  padding-left: 1rem; /* px-4 */
+  padding-right: 10px; /* pr-[10px] */
+  padding-top: 0.5rem; /* py-2 */
+  padding-bottom: 0.5rem;
+  font-size: 14px;
+  height: 2.5rem; /* h-10 */
+  border-radius: 0.5rem; /* rounded-lg */
+  border: 1px solid #e5e7eb; /* border-gray-200 */
+  transition: background 0.2s;
+}
+.unified-dropdown:focus, .unified-dropdown:hover {
+  background-color: #e5e7eb; /* hover:bg-gray-200 */
+  outline: none;
+  border-color: #3b82f6; /* Updated to use blue-500 */
+}
+
+.night-input.dark {
+  background-color: #374151 !important; /* Tailwind gray-700 */
+}
+
+.force-dark-bg.dark {
+  background-color: #374151 !important; /* Tailwind gray-700 */
+}
+
+/* Utility to force dark background and text for stubborn fields */
+.dark .force-dark-bg {
+  background-color: #1f2937 !important; /* Tailwind gray-800 */
+  color: #f3f4f6 !important;           /* Tailwind gray-100 */
+}
+
+/* Marquee animation for overflowing text */
+.marquee-container {
+  position: relative;
+}
+
+.marquee-text {
+  animation: marquee 7s linear 1 forwards;
+  animation-delay: 2s;
+  display: inline-block;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* Force dark mode for all input fields and react-datepicker input fields */
+.dark input,
+.dark .react-datepicker__input-container input {
+  background-color: #374151 !important; /* Tailwind gray-700 */
+  color: #f3f4f6 !important;           /* Tailwind gray-100 */
+  border-color: #4b5563 !important;    /* Tailwind gray-600 */
+}
+
+/* Dark mode styles for react-datepicker calendar */
+.dark .react-datepicker {
+  background-color: #1f2937 !important; /* Tailwind gray-800 */
+  color: #f3f4f6 !important;            /* Tailwind gray-100 */
+  border-color: #374151 !important;     /* Tailwind gray-700 */
+}
+.dark .react-datepicker__header {
+  background-color: #111827 !important; /* Tailwind gray-900 */
+  border-bottom-color: #374151 !important;
+}
+.dark .react-datepicker__current-month,
+.dark .react-datepicker-time__header,
+.dark .react-datepicker-year-header {
+  color: #f3f4f6 !important;
+}
+.dark .react-datepicker__day,
+.dark .react-datepicker__day-name,
+.dark .react-datepicker__day--selected,
+.dark .react-datepicker__day--keyboard-selected {
+  background-color: transparent !important;
+  color: #f3f4f6 !important;
+}
+.dark .react-datepicker__day--selected,
+.dark .react-datepicker__day--keyboard-selected {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+  color: #fff !important;
+}
+.dark .react-datepicker__day:hover {
+  background-color: #374151 !important; /* Tailwind gray-700 */
+  color: #fff !important;
+}
+.dark .react-datepicker__today-button {
+  background: #374151 !important;
+  color: #60a5fa !important; /* Tailwind blue-400 */
+  border-top: 1px solid #374151 !important;
+}
