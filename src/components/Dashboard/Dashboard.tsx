@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Wallet, CreditCard, Banknote, ArrowRight, Plus, ShoppingCart, Clock, CheckCircle, XCircle, PieChart, LineChart, RefreshCw } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Wallet, CreditCard, Banknote, ArrowRight, Plus, ShoppingCart, Clock, CheckCircle, XCircle, PieChart, LineChart, RefreshCw, X } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useAuthStore } from '../../store/authStore';
@@ -95,8 +95,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onViewChange }) => {
   // Debug logging for currency card issue
 
   const [selectedCurrency, setSelectedCurrency] = useState(stats.byCurrency[0]?.currency || 'USD');
+  const [showMultiCurrencyAnalytics, setShowMultiCurrencyAnalytics] = useState(() => {
+    const saved = localStorage.getItem('showMultiCurrencyAnalytics');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  // Save Multi-Currency Analytics visibility preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('showMultiCurrencyAnalytics', JSON.stringify(showMultiCurrencyAnalytics));
+  }, [showMultiCurrencyAnalytics]);
 
   // Get purchase analytics
   const purchaseAnalytics = useFinanceStore((state) => state.getMultiCurrencyPurchaseAnalytics());
@@ -324,9 +333,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onViewChange }) => {
         <div className="flex-1 space-y-6">
 
           {/* Multi-Currency Quick Access */}
-          {stats.byCurrency.length > 1 && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700">
-              <div className="flex items-center justify-between">
+          {stats.byCurrency.length > 1 && showMultiCurrencyAnalytics && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700 relative">
+              <button
+                onClick={() => setShowMultiCurrencyAnalytics(false)}
+                className="absolute top-2 right-2 p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 transition-colors"
+                aria-label="Close Multi-Currency Analytics"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex items-center justify-between pr-8">
                 <div>
                   <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
                     Multi-Currency Analytics
@@ -343,6 +359,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onViewChange }) => {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Show Analytics Button when hidden */}
+          {stats.byCurrency.length > 1 && !showMultiCurrencyAnalytics && (
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowMultiCurrencyAnalytics(true)}
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 text-sm font-medium flex items-center space-x-1 transition-colors"
+                aria-label="Show Multi-Currency Analytics"
+              >
+                <span>Show Multi-Currency Analytics</span>
+                <ArrowRight className="w-3 h-3 rotate-180" />
+              </button>
             </div>
           )}
 
