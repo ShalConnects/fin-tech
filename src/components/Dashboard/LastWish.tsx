@@ -52,15 +52,12 @@ interface LastWishSettings {
 }
 
 export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAccess }) => {
-  // Temporarily disabled to fix 406 error
-  return null;
+  const { user, profile } = useAuthStore();
+  const { accounts, transactions, purchases, donationSavingRecords } = useFinanceStore();
+  const [lendBorrowRecords, setLendBorrowRecords] = useState<any[]>([]);
   
-  // const { user, profile } = useAuthStore();
-  // const { accounts, transactions, purchases, donationSavingRecords } = useFinanceStore();
-  // const [lendBorrowRecords, setLendBorrowRecords] = useState<any[]>([]);
-  
-  // // Check if user has premium subscription, or force access for testing
-  // const isPremium = forceFreeAccess || (profile?.subscription?.plan === 'premium' && profile?.subscription?.status === 'active');
+  // Enable for all users (removed premium restriction)
+  const isPremium = true;
   const [settings, setSettings] = useState<LastWishSettings>({
     isEnabled: false,
     checkInFrequency: 30,
