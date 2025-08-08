@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
-import { Heart, Trash2, Search, Filter, Bookmark, Calendar, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Heart, Trash2, Search, Filter, Bookmark, Calendar, User, Eye, Quote } from 'lucide-react';
 import { useNotificationStore, FavoriteQuote } from '../store/notificationStore';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 export const FavoriteQuotes: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { favoriteQuotes, removeFavoriteQuote } = useNotificationStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'author' | 'category'>('date');
+  
+  // Check if Quote Widget is hidden on dashboard
+  const [showQuoteWidget, setShowQuoteWidget] = useState(() => {
+    const saved = localStorage.getItem('showQuoteWidget');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
 
   // Filter quotes based on search and category
   const filteredQuotes = favoriteQuotes
@@ -33,6 +41,13 @@ export const FavoriteQuotes: React.FC = () => {
     });
 
   const categories = ['all', 'financial', 'motivation', 'success', 'wisdom'];
+
+  const handleShowQuoteWidget = () => {
+    setShowQuoteWidget(true);
+    localStorage.setItem('showQuoteWidget', 'true');
+    // Navigate back to dashboard
+    navigate('/dashboard');
+  };
 
   const getCategoryIcon = (category?: string) => {
     switch (category) {
@@ -101,18 +116,32 @@ export const FavoriteQuotes: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
-              <Heart className="w-6 h-6 text-red-500" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                <Heart className="w-6 h-6 text-red-500" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Favorite Quotes
+                </h1>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Your collection of inspiring financial wisdom
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Favorite Quotes
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300">
-                Your collection of inspiring financial wisdom
-              </p>
-            </div>
+            
+            {/* Show Quote Widget Button */}
+            {!showQuoteWidget && (
+              <button
+                onClick={handleShowQuoteWidget}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+                title="Show Quote Widget on Dashboard"
+              >
+                <Quote className="w-4 h-4" />
+                <span>Show on Dashboard</span>
+              </button>
+            )}
           </div>
           
           {/* Stats */}

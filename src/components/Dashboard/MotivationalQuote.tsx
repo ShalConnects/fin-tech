@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Quote, RefreshCw, Heart, Bookmark, ExternalLink } from 'lucide-react';
+import { Quote, RefreshCw, Heart, Bookmark, ExternalLink, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,17 @@ export const MotivationalQuote: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const { addFavoriteQuote, removeFavoriteQuote, isQuoteFavorited, favoriteQuotes } = useNotificationStore();
+  
+  // Check if quote widget is hidden
+  const [showQuoteWidget, setShowQuoteWidget] = useState(() => {
+    const saved = localStorage.getItem('showQuoteWidget');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // Save quote widget visibility preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('showQuoteWidget', JSON.stringify(showQuoteWidget));
+  }, [showQuoteWidget]);
 
   // Fallback quotes for when API fails
   const fallbackQuotes = [
@@ -130,8 +141,21 @@ export const MotivationalQuote: React.FC = () => {
     return <MotivationalQuoteSkeleton />;
   }
 
+  // Don't render if widget is hidden
+  if (!showQuoteWidget) {
+    return null;
+  }
+
   return (
     <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700 relative overflow-hidden">
+      {/* Close button */}
+      <button
+        onClick={() => setShowQuoteWidget(false)}
+        className="absolute top-2 right-2 p-1 text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors z-20"
+        aria-label="Close Quote Widget"
+      >
+        <X className="w-4 h-4" />
+      </button>
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-16 h-16 opacity-10">
         <Quote className="w-full h-full text-purple-600 dark:text-purple-400" />

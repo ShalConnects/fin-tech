@@ -1,6 +1,7 @@
 import React from 'react';
 import { Edit2, Trash2, Plus, Info, ChevronRight } from 'lucide-react';
 import { Account, Transaction } from '../../types';
+import { getAccountColor } from '../../utils/accountIcons';
 import { AccountCard } from './AccountCard';
 import { formatCurrency } from '../../utils/accountUtils';
 
@@ -84,8 +85,10 @@ export const AccountMobileView: React.FC<AccountMobileViewProps> = React.memo(({
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {account.name}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {account.type === 'cash' ? 'Cash Wallet' : account.type.charAt(0).toUpperCase() + account.type.slice(1)}
+                    <div className="text-xs">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getAccountColor(account.type)}`}>
+                        {account.type === 'cash' ? 'Cash Wallet' : account.type.charAt(0).toUpperCase() + account.type.slice(1)}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
-import { Menu, Bell, Search, Sun, Moon, User, Settings, LogOut, ArrowLeftRight, LifeBuoy, Globe, Heart } from 'lucide-react';
+import { Menu, Bell, Search, Sun, Moon, User, Settings, LogOut, ArrowLeftRight, LifeBuoy, Globe, Heart, Quote } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
@@ -301,6 +301,16 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, title, subtitle })
                 >
                   <Heart className="w-4 h-4 mr-2" />
                   Donations
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/favorite-quotes');
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                >
+                  <Quote className="w-4 h-4 mr-2" />
+                  Favorite Quotes
                 </button>
                 <button
                   onClick={handleLogout}

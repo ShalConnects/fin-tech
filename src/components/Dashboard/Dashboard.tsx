@@ -337,7 +337,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onViewChange }) => {
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700 relative">
               <button
                 onClick={() => setShowMultiCurrencyAnalytics(false)}
-                className="absolute top-2 right-2 p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 transition-colors"
+                className="absolute top-1/2 right-2 transform -translate-y-1/2 p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 transition-colors"
                 aria-label="Close Multi-Currency Analytics"
               >
                 <X className="w-5 h-5" />
@@ -362,19 +362,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onViewChange }) => {
             </div>
           )}
 
-          {/* Show Analytics Button when hidden */}
-          {stats.byCurrency.length > 1 && !showMultiCurrencyAnalytics && (
-            <div className="flex justify-center">
-              <button
-                onClick={() => setShowMultiCurrencyAnalytics(true)}
-                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 text-sm font-medium flex items-center space-x-1 transition-colors"
-                aria-label="Show Multi-Currency Analytics"
-              >
-                <span>Show Multi-Currency Analytics</span>
-                <ArrowRight className="w-3 h-3 rotate-180" />
-              </button>
-            </div>
-          )}
+
 
           {/* Currency Sections - Responsive grid */}
           <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 gap-4 lg:gap-6">

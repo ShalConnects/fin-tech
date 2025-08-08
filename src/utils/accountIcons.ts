@@ -21,16 +21,16 @@ export const getAccountIcon = (type: Account['type']) => {
 export const getAccountColor = (type: Account['type']) => {
   switch (type) {
     case 'checking':
-      return 'bg-blue-100 text-blue-600';
+      return 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200';
     case 'savings':
-      return 'bg-green-100 text-green-600';
+      return 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-200';
     case 'credit':
-      return 'bg-red-100 text-red-600';
+      return 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-200';
     case 'investment':
-      return 'bg-purple-100 text-purple-600';
+      return 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-200';
     case 'cash':
-      return 'bg-yellow-100 text-yellow-600';
+      return 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-200';
     default:
-      return 'bg-gray-100 text-gray-600';
+      return 'bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-200';
   }
 }; 

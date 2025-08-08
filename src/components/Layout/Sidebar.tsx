@@ -117,14 +117,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentView,
       {/* Mobile backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-20 md:hidden"
           onClick={onToggle}
         />
       )}
       
       {/* Sidebar */}
       <div className={`
-        fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-30 transform transition-transform duration-300 ease-in-out
+        fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 z-30 transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         md:translate-x-0 md:static md:z-0
         ${effectiveCollapsed ? 'w-16' : 'w-52'}
@@ -236,7 +236,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, currentView,
             <div className="flex items-center space-x-2">
               <Link
                 to="/help"
-                className={`flex-1 flex items-center space-x-3 px-3 py-2 mt-2 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
+                className={`flex-1 flex items-center space-x-3 px-3 py-2 mt-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors ${
                   effectiveCollapsed ? 'justify-center px-2' : ''
                 }`}
                 title={effectiveCollapsed ? 'Help & Support' : undefined}

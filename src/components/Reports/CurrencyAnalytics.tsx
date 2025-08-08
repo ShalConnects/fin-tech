@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Download, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, Eye, Home, Quote } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -25,6 +25,18 @@ export const CurrencyAnalytics: React.FC = () => {
 
   const [selectedPeriod, setSelectedPeriod] = useState<'1m' | '3m' | '6m' | '1y'>('1m');
   const [activeTab, setActiveTab] = useState<'overview' | 'comparison' | 'earnings'>('overview');
+  
+  // Check if Multi-Currency Analytics is hidden on dashboard
+  const [showMultiCurrencyAnalytics, setShowMultiCurrencyAnalytics] = useState(() => {
+    const saved = localStorage.getItem('showMultiCurrencyAnalytics');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // Check if Quote Widget is hidden on dashboard
+  const [showQuoteWidget, setShowQuoteWidget] = useState(() => {
+    const saved = localStorage.getItem('showQuoteWidget');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
 
   // Fetch data on component mount
   useEffect(() => {
@@ -50,6 +62,20 @@ export const CurrencyAnalytics: React.FC = () => {
 
   const handleRefresh = () => {
     window.location.reload();
+  };
+
+  const handleShowOnDashboard = () => {
+    setShowMultiCurrencyAnalytics(true);
+    localStorage.setItem('showMultiCurrencyAnalytics', 'true');
+    // Navigate back to dashboard
+    navigate('/dashboard');
+  };
+
+  const handleShowQuoteWidget = () => {
+    setShowQuoteWidget(true);
+    localStorage.setItem('showQuoteWidget', 'true');
+    // Navigate back to dashboard
+    navigate('/dashboard');
   };
 
   const tabs = [
@@ -97,6 +123,26 @@ export const CurrencyAnalytics: React.FC = () => {
           >
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
+          {!showMultiCurrencyAnalytics && (
+            <button
+              onClick={handleShowOnDashboard}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+              title="Show Multi-Currency Analytics on Dashboard"
+            >
+              <Eye className="w-4 h-4" />
+              <span>Show Analytics</span>
+            </button>
+          )}
+          {!showQuoteWidget && (
+            <button
+              onClick={handleShowQuoteWidget}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+              title="Show Quote Widget on Dashboard"
+            >
+              <Quote className="w-4 h-4" />
+              <span>Show Quotes</span>
+            </button>
+          )}
           <button
             onClick={handleExport}
             className="bg-gradient-primary hover:bg-gradient-primary-hover text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"

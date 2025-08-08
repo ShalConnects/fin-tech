@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Edit2, Trash2, InfoIcon, PlusCircle, Wallet } from 'lucide-react';
 import { Account, Transaction } from '../../types';
+import { getAccountColor } from '../../utils/accountIcons';
 
 interface AccountTableProps {
   accounts: Account[];
@@ -156,15 +157,9 @@ export const AccountTable: React.FC<AccountTableProps> = React.memo(({
                   </div>
                 </td>
                 <td className="px-6 py-[0.7rem]">
-                  {account.type === 'cash' ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-200">
-                      Cash Account
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200">
-                      {account.type.charAt(0).toUpperCase() + account.type.slice(1)}
-                    </span>
-                  )}
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getAccountColor(account.type)}`}>
+                    {account.type === 'cash' ? 'Cash Account' : account.type.charAt(0).toUpperCase() + account.type.slice(1)}
+                  </span>
                 </td>
                 <td className="px-6 py-[0.7rem] text-center">
                   <span className="text-sm text-gray-900 dark:text-white">{account.currency}</span>

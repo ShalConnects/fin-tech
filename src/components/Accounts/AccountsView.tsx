@@ -733,17 +733,19 @@ export const AccountsView: React.FC = () => {
                     </svg>
                   </button>
                 )}
+
+                {/* Add Account Button - Now part of filter section */}
+                <button
+                  onClick={() => {
+                    setEditingAccount(null);
+                    setShowAccountForm(true);
+                  }}
+                  className="bg-gradient-primary text-white px-3 py-1.5 rounded-md hover:bg-gradient-primary-hover transition-colors flex items-center space-x-1.5 text-[13px] h-8"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Account</span>
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setEditingAccount(null);
-                  setShowAccountForm(true);
-                }}
-                className="bg-gradient-primary text-white px-3 py-1.5 rounded-md hover:bg-gradient-primary-hover transition-colors flex items-center space-x-1.5 text-[13px] h-8"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Account</span>
-              </button>
             </div>
           </div>
 
@@ -792,7 +794,8 @@ export const AccountsView: React.FC = () => {
 
                                         {/* Table Section */}
           <div className="overflow-x-auto">
-            <div className="max-h-[500px] overflow-y-auto">
+            {/* Desktop Table View */}
+            <div className="hidden xl:block max-h-[500px] overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 text-[14px]">
                 <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                 <tr>
@@ -928,15 +931,9 @@ export const AccountsView: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-[0.7rem]">
-                            {account.type === 'cash' ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-200">
-                                Cash Account
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200">
-                                {account.type.charAt(0).toUpperCase() + account.type.slice(1)}
-                              </span>
-                            )}
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getAccountColor(account.type)}`}>
+                              {account.type === 'cash' ? 'Cash Account' : account.type.charAt(0).toUpperCase() + account.type.slice(1)}
+                            </span>
                           </td>
                           <td className="px-6 py-[0.7rem] text-center">
                             <span className="text-sm text-gray-900 dark:text-white">{account.currency}</span>
@@ -1046,7 +1043,7 @@ export const AccountsView: React.FC = () => {
                                             const incoming = dpsTransfers
                                               .filter(t => t.to_account_id === account.id)
                                               .reduce((sum, t) => sum + (t.amount || 0), 0);
-                                            return formatCurrency(Number(account.initial_balance) + incoming, account.currency);
+                                            return formatCurrency(incoming, account.currency);
                                           })()
                                         }
                                       </div>
@@ -1098,20 +1095,16 @@ export const AccountsView: React.FC = () => {
                                           return (
                                             <>
                                               <div><span className="font-medium">DPS Type:</span> {mainAccount.dps_type === 'monthly' ? 'Monthly' : 'Flexible'}</div>
-                                              <div><span className="font-medium">Amount Type:</span> {mainAccount.dps_amount_type === 'fixed' ? 'Fixed' : 'Custom'}</div>
-                                              {mainAccount.dps_fixed_amount && (
-                                                <div><span className="font-medium">Fixed Amount:</span> {formatCurrency(mainAccount.dps_fixed_amount, account.currency)} {mainAccount.dps_type === 'monthly' ? 'monthly' : 'daily'}</div>
-                                              )}
-                                              <div><span className="font-medium">Frequency:</span> {mainAccount.dps_type === 'monthly' ? 'Monthly transfers' : 'Manual transfers'}</div>
+                                              <div><span className="font-medium">Linked to:</span> {mainAccount.name}</div>
                                             </>
                                           );
                                         }
-                                        return null;
+                                        return <div>DPS Savings Account</div>;
                                       })()}
                                     </div>
                                   ) : (
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                                      <div>DPS not enabled</div>
+                                    <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                                      <div>No DPS configured</div>
                                       <div className="pt-2">
                                         <button
                                           onClick={() => handleToggleDPS(account)}
@@ -1124,20 +1117,27 @@ export const AccountsView: React.FC = () => {
                                   )}
                                 </div>
 
-                                {/* Recent Activity */}
+                                {/* Recent History */}
                                 <div className="space-y-2">
-                                  <h4 className="text-sm font-medium text-gray-900">Recent Activity</h4>
-                                  <div className="text-xs text-gray-600 space-y-1">
+                                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">Recent History</h4>
+                                  <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
                                     {accountTransactions.slice(-3).reverse().map((transaction, index) => (
-                                      <div key={transaction.id} className="flex justify-between">
-                                        <span className="truncate">{transaction.description}</span>
-                                        <span className={`font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                      <div key={transaction.id} className="flex justify-between items-center">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="truncate">
+                                            {(transaction.description || 'No description').length > 20 
+                                              ? (transaction.description || 'No description').substring(0, 20) + '...'
+                                              : (transaction.description || 'No description')
+                                            }
+                                          </div>
+                                        </div>
+                                        <div className={`font-medium ml-2 ${transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                           {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, account.currency)}
-                                        </span>
+                                        </div>
                                       </div>
                                     ))}
                                     {accountTransactions.length === 0 && (
-                                      <div className="text-gray-400">No transactions yet</div>
+                                      <div className="text-gray-400 italic">No transactions yet</div>
                                     )}
                                   </div>
                                 </div>
@@ -1151,6 +1151,292 @@ export const AccountsView: React.FC = () => {
                 )}
               </tbody>
             </table>
+            </div>
+
+
+
+            {/* Mobile/Tablet Stacked Table View */}
+            <div className="xl:hidden max-h-[500px] overflow-y-auto">
+              <div className="space-y-4 px-2.5">
+                {filteredAccountsForTable.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                      <CreditCard className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No account records found</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                      Start tracking your financial accounts by adding your first account
+                    </p>
+                  </div>
+                ) : (
+                  filteredAccountsForTable.map((account) => {
+                    const accountTransactions = transactions.filter(t => t.account_id === account.id);
+                    const incomeTransactions = accountTransactions.filter(t => t.type === 'income');
+                    const expenseTransactions = accountTransactions.filter(t => t.type === 'expense');
+                    
+                    // Calculate total saved and donated
+                    let totalSaved = 0;
+                    let totalDonated = 0;
+                    incomeTransactions.forEach(t => {
+                      const income = t.amount;
+                      if (t.category === 'Savings') {
+                        totalSaved += income;
+                      } else if (t.category === 'Donation') {
+                        totalDonated += income;
+                      }
+                    });
+                    
+                    // Get DPS savings account
+                    const dpsSavingsAccount = accounts.find(a => a.id === account.dps_savings_account_id);
+                    
+                    // Check if this account is a DPS savings account (linked to another account)
+                    const isDpsSavingsAccount = accounts.some(otherAccount => 
+                      otherAccount.dps_savings_account_id === account.id
+                    );
+                    
+                    return (
+                      <div key={account.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        {/* Stacked Table Row */}
+                        <div 
+                          className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          onClick={() => toggleRowExpansion(account.id)}
+                        >
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {/* Account Name */}
+                            <div className="col-span-2 md:col-span-1">
+                              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Account Name</div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {account.name.charAt(0).toUpperCase() + account.name.slice(1)}
+                                </div>
+                                <svg 
+                                  className={`w-4 h-4 text-gray-400 transition-transform ${isRowExpanded(account.id) ? 'rotate-90' : ''}`} 
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </div>
+
+                            {/* Type */}
+                            <div>
+                              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Type</div>
+                              <div>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getAccountColor(account.type)}`}>
+                                  {account.type === 'cash' ? 'Cash Account' : account.type.charAt(0).toUpperCase() + account.type.slice(1)}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Balance */}
+                            <div>
+                              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Balance</div>
+                              <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {formatCurrency(account.calculated_balance, account.currency)}
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="col-span-2 md:col-span-1">
+                              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Actions</div>
+                              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                                {(!isDpsSavingsAccount && account.type !== 'cash') && (
+                                  <button
+                                    onClick={async () => {
+                                      await updateAccount(account.id, { isActive: !account.isActive });
+                                    }}
+                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 ${account.isActive ? 'bg-green-600' : 'bg-gray-300'}`}
+                                    title={account.isActive ? 'Deactivate Account' : 'Activate Account'}
+                                  >
+                                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ${account.isActive ? 'translate-x-5' : 'translate-x-1'}`} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    setSelectedAccount(account);
+                                    setModalOpen(true);
+                                  }}
+                                  className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                                  title="More Info"
+                                >
+                                  <InfoIcon className="w-4 h-4" />
+                                </button>
+                                {!isDpsSavingsAccount && (
+                                  <button
+                                    onClick={() => handleAddTransaction(account.id)}
+                                    className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                                    title="Add Transaction"
+                                  >
+                                    <PlusCircle className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Additional Info Row */}
+                          <div className="grid grid-cols-3 gap-4 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                            <div>
+                              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Currency</div>
+                              <div className="text-sm text-gray-900 dark:text-white">{account.currency}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Transactions</div>
+                              <div className="text-sm text-gray-900 dark:text-white">
+                                {accountTransactions.length}
+                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                                  ({incomeTransactions.length} income, {expenseTransactions.length} expense)
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">DPS</div>
+                              <div>
+                                {account.has_dps ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
+                                      Active
+                                    </span>
+                                    {dpsSavingsAccount && (
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                                        {formatCurrency(dpsSavingsAccount.calculated_balance, dpsSavingsAccount.currency)}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expanded Content */}
+                        {isRowExpanded(account.id) && (
+                          <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {/* Account Details */}
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">Account Details</h4>
+                                <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                                  <div>
+                                    <span className="font-medium">Initial Balance:</span> {formatCurrency(Number(account.initial_balance), account.currency)}
+                                  </div>
+                                  {accounts.some(a => a.dps_savings_account_id === account.id) && (
+                                    <div>
+                                      <span className="font-medium">DPS Balance:</span> {
+                                        (() => {
+                                          const incoming = dpsTransfers
+                                            .filter(t => t.to_account_id === account.id)
+                                            .reduce((sum, t) => sum + (t.amount || 0), 0);
+                                          return formatCurrency(Number(account.initial_balance) + incoming, account.currency);
+                                        })()
+                                      }
+                                    </div>
+                                  )}
+                                  {!accounts.some(a => a.dps_savings_account_id === account.id) && (
+                                    <>
+                                      <div><span className="font-medium">Total Saved:</span> {formatCurrency(totalSaved, account.currency)}</div>
+                                      <div><span className="font-medium">Total Donated:</span> {formatCurrency(totalDonated, account.currency)}</div>
+                                    </>
+                                  )}
+                                  <div><span className="font-medium">Last Transaction:</span> {accountTransactions.length > 0 ? new Date(accountTransactions[accountTransactions.length - 1].date).toLocaleDateString() : 'None'}</div>
+                                </div>
+                              </div>
+
+                              {/* DPS Information */}
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">DPS Settings</h4>
+                                {account.has_dps ? (
+                                  <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                                    <div><span className="font-medium">Type:</span> {account.dps_type}</div>
+                                    <div><span className="font-medium">Amount Type:</span> {account.dps_amount_type}</div>
+                                    {account.dps_fixed_amount && (
+                                      <div><span className="font-medium">Fixed Amount:</span> {formatCurrency(account.dps_fixed_amount, account.currency)}</div>
+                                    )}
+                                    {dpsSavingsAccount && (
+                                      <div><span className="font-medium">Savings Account:</span> {dpsSavingsAccount.name}</div>
+                                    )}
+                                    <div className="pt-2 flex gap-2">
+                                      <button
+                                        onClick={() => handleManageDPS(account)}
+                                        className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+                                      >
+                                        Manage DPS
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteDPSWithTransfer(account, dpsSavingsAccount || account)}
+                                        className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+                                      >
+                                        Delete DPS
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : isDpsSavingsAccount ? (
+                                  <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                                    {(() => {
+                                      // Find the main account that created this DPS account
+                                      const mainAccount = accounts.find(a => a.dps_savings_account_id === account.id);
+                                      if (mainAccount) {
+                                        return (
+                                          <>
+                                            <div><span className="font-medium">DPS Type:</span> {mainAccount.dps_type === 'monthly' ? 'Monthly' : 'Flexible'}</div>
+                                            <div><span className="font-medium">Linked to:</span> {mainAccount.name}</div>
+                                          </>
+                                        );
+                                      }
+                                      return <div>DPS Savings Account</div>;
+                                    })()}
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                                    <div>No DPS configured</div>
+                                    <div className="pt-2">
+                                      <button
+                                        onClick={() => handleToggleDPS(account)}
+                                        className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                                      >
+                                        Enable DPS
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Recent History */}
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">Recent History</h4>
+                                <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                                  {accountTransactions.slice(-3).reverse().map((transaction, index) => (
+                                    <div key={transaction.id} className="flex justify-between items-center">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="truncate">
+                                          {(transaction.description || 'No description').length > 20 
+                                            ? (transaction.description || 'No description').substring(0, 20) + '...'
+                                            : (transaction.description || 'No description')
+                                          }
+                                        </div>
+                                      </div>
+                                      <div className={`font-medium ml-2 ${transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, account.currency)}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {accountTransactions.length === 0 && (
+                                    <div className="text-gray-400 italic">No transactions yet</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1403,14 +1689,9 @@ export const AccountsView: React.FC = () => {
                   <div className="flex-1 overflow-y-auto p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="space-y-1.5 sm:space-y-2 text-xs">
                       <div><b>Name:</b> {selectedAccount.name.charAt(0).toUpperCase() + selectedAccount.name.slice(1)}</div>
-                      <div><b>Type:</b> {selectedAccount.type === 'cash' ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 gap-1 ml-1">
-                          <Wallet className="w-4 h-4 mr-1 text-yellow-500" />
-                          Cash Wallet
-                        </span>
-                      ) : (
-                        selectedAccount.type.charAt(0).toUpperCase() + selectedAccount.type.slice(1)
-                      )}</div>
+                      <div><b>Type:</b> <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getAccountColor(selectedAccount.type)} ml-1`}>
+                        {selectedAccount.type === 'cash' ? 'Cash Wallet' : selectedAccount.type.charAt(0).toUpperCase() + selectedAccount.type.slice(1)}
+                      </span></div>
                       <div><b>Initial Balance:</b> {formatCurrency(Number(selectedAccount.initial_balance), selectedAccount.currency)}</div>
                       <div><b>Currency:</b> {selectedAccount.currency}</div>
                       <div><b>Description:</b> {selectedAccount.description || 'N/A'}</div>
