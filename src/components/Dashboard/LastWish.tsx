@@ -214,7 +214,15 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
     }
   };
 
-  const addRecipient = (recipient: any) => {
+  const addRecipient = async (recipient: any) => {
+    if (!user) return;
+
+    // Check if already at maximum recipients
+    if (settings.recipients.length >= 3) {
+      toast.error('Maximum 3 recipients allowed');
+      return;
+    }
+
     const newRecipient = {
       id: Date.now().toString(),
       email: recipient.email,
@@ -222,17 +230,91 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
       relationship: recipient.relationship,
     };
 
+    const updatedRecipients = [...settings.recipients, newRecipient];
     setSettings(prev => ({
       ...prev,
-      recipients: [...prev.recipients, newRecipient],
+      recipients: updatedRecipients,
     }));
+
+    // Save to database
+    try {
+      const { error } = await supabase
+        .from('last_wish_settings')
+        .upsert({
+          user_id: user.id,
+          is_enabled: settings.isEnabled,
+          check_in_frequency: settings.checkInFrequency,
+          last_check_in: settings.lastCheckIn,
+          recipients: updatedRecipients,
+          include_data: settings.includeData,
+          message: settings.message,
+          is_active: settings.isActive,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      toast.success('Recipient added successfully');
+    } catch (error) {
+      console.error('Error adding recipient:', error);
+      toast.error('Failed to add recipient');
+      // Revert the state if save failed
+      setSettings(prev => ({
+        ...prev,
+        recipients: prev.recipients.filter(r => r.id !== newRecipient.id),
+      }));
+    }
   };
 
-  const removeRecipient = (id: string) => {
+  const removeRecipient = async (id: string) => {
+    if (!user) return;
+
+    const updatedRecipients = settings.recipients.filter(r => r.id !== id);
+    
+    // If removing the last recipient and Last Wish is enabled, disable it
+    const shouldDisable = updatedRecipients.length === 0 && settings.isEnabled;
+    
     setSettings(prev => ({
       ...prev,
-      recipients: prev.recipients.filter(r => r.id !== id),
+      recipients: updatedRecipients,
+      isEnabled: shouldDisable ? false : prev.isEnabled,
+      isActive: shouldDisable ? false : prev.isActive,
     }));
+
+    // Save to database
+    try {
+      const { error } = await supabase
+        .from('last_wish_settings')
+        .upsert({
+          user_id: user.id,
+          is_enabled: shouldDisable ? false : settings.isEnabled,
+          check_in_frequency: settings.checkInFrequency,
+          last_check_in: settings.lastCheckIn,
+          recipients: updatedRecipients,
+          include_data: settings.includeData,
+          message: settings.message,
+          is_active: shouldDisable ? false : settings.isActive,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      if (shouldDisable) {
+        toast.success('Recipient removed. Last Wish disabled because no recipients remain.');
+      } else {
+        toast.success('Recipient removed successfully');
+      }
+    } catch (error) {
+      console.error('Error removing recipient:', error);
+      toast.error('Failed to remove recipient');
+      // Revert the state if save failed
+      setSettings(prev => ({
+        ...prev,
+        recipients: settings.recipients,
+        isEnabled: settings.isEnabled,
+        isActive: settings.isActive,
+      }));
+    }
   };
 
   const toggleDataInclusion = (key: keyof typeof settings.includeData) => {
@@ -243,6 +325,75 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
         [key]: !prev.includeData[key],
       },
     }));
+  };
+
+  const toggleLastWishEnabled = async (enabled: boolean) => {
+    if (!user) return;
+
+    // If trying to enable but no recipients, show error and open recipient modal
+    if (enabled && settings.recipients.length === 0) {
+      toast.error('Please add at least one recipient before enabling Last Wish');
+      setShowRecipientModal(true);
+      return;
+    }
+
+    setSettings(prev => ({ ...prev, isEnabled: enabled }));
+    
+    try {
+      const { error } = await supabase
+        .from('last_wish_settings')
+        .upsert({
+          user_id: user.id,
+          is_enabled: enabled,
+          check_in_frequency: settings.checkInFrequency,
+          last_check_in: settings.lastCheckIn,
+          recipients: settings.recipients,
+          include_data: settings.includeData,
+          message: settings.message,
+          is_active: enabled,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      toast.success(enabled ? 'Last Wish enabled successfully' : 'Last Wish disabled successfully');
+    } catch (error) {
+      console.error('Error toggling last wish:', error);
+      toast.error('Failed to update Last Wish status');
+      // Revert the state if save failed
+      setSettings(prev => ({ ...prev, isEnabled: !enabled }));
+    }
+  };
+
+  const updateCheckInFrequency = async (frequency: number) => {
+    if (!user) return;
+
+    setSettings(prev => ({ ...prev, checkInFrequency: frequency }));
+    
+    try {
+      const { error } = await supabase
+        .from('last_wish_settings')
+        .upsert({
+          user_id: user.id,
+          is_enabled: settings.isEnabled,
+          check_in_frequency: frequency,
+          last_check_in: settings.lastCheckIn,
+          recipients: settings.recipients,
+          include_data: settings.includeData,
+          message: settings.message,
+          is_active: settings.isActive,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      toast.success('Check-in frequency updated successfully');
+    } catch (error) {
+      console.error('Error updating check-in frequency:', error);
+      toast.error('Failed to update check-in frequency');
+      // Revert the state if save failed
+      setSettings(prev => ({ ...prev, checkInFrequency: settings.checkInFrequency }));
+    }
   };
 
   const getDataSummary = () => {
@@ -385,7 +536,7 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
               <span>Check In Now</span>
             </button>
             <button
-              onClick={() => setSettings(prev => ({ ...prev, isEnabled: false }))}
+              onClick={() => toggleLastWishEnabled(false)}
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center space-x-2"
             >
               <Settings className="w-4 h-4" />
@@ -405,7 +556,7 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
               <input
                 type="checkbox"
                 checked={settings.isEnabled}
-                onChange={(e) => setSettings(prev => ({ ...prev, isEnabled: e.target.checked }))}
+                onChange={(e) => toggleLastWishEnabled(e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -427,7 +578,7 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
                   name="frequency"
                   value={days}
                   checked={settings.checkInFrequency === days}
-                  onChange={(e) => setSettings(prev => ({ ...prev, checkInFrequency: parseInt(e.target.value) }))}
+                  onChange={(e) => updateCheckInFrequency(parseInt(e.target.value))}
                   className="text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -445,10 +596,11 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
           <h4 className="font-medium text-gray-900 dark:text-white">Recipients</h4>
           <button
             onClick={() => setShowRecipientModal(true)}
-            className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            disabled={settings.recipients.length >= 3}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Recipient</span>
+            <span>Add Recipient ({settings.recipients.length}/3)</span>
           </button>
         </div>
         
@@ -523,7 +675,7 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
         <button
           onClick={saveSettings}
           disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
+          className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
         >
           <Shield className="w-4 h-4" />
           <span>{loading ? 'Saving...' : 'Save Settings'}</span>
@@ -536,6 +688,7 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
           onClose={() => setShowRecipientModal(false)}
           onAdd={addRecipient}
           editingRecipient={editingRecipient}
+          currentRecipientCount={settings.recipients.length}
         />
       )}
     </div>
@@ -545,29 +698,41 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
 // Recipient Modal Component
 interface RecipientModalProps {
   onClose: () => void;
-  onAdd: (recipient: any) => void;
+  onAdd: (recipient: any) => Promise<void>;
   editingRecipient: any;
+  currentRecipientCount: number;
 }
 
-const RecipientModal: React.FC<RecipientModalProps> = ({ onClose, onAdd, editingRecipient }) => {
+const RecipientModal: React.FC<RecipientModalProps> = ({ onClose, onAdd, editingRecipient, currentRecipientCount }) => {
   const [formData, setFormData] = useState({
     name: editingRecipient?.name || '',
     email: editingRecipient?.email || '',
     relationship: editingRecipient?.relationship || '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd(formData);
-    onClose();
+    setIsSubmitting(true);
+    try {
+      await onAdd(formData);
+      onClose();
+    } catch (error) {
+      // Error is handled in the onAdd function
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
           Add Recipient
         </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          {currentRecipientCount}/3 recipients added
+        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -609,14 +774,15 @@ const RecipientModal: React.FC<RecipientModalProps> = ({ onClose, onAdd, editing
           <div className="flex space-x-3">
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Recipient
+              {isSubmitting ? 'Adding...' : 'Add Recipient'}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all"
             >
               Cancel
             </button>
