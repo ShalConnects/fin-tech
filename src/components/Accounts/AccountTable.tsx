@@ -132,12 +132,12 @@ export const AccountTable: React.FC<AccountTableProps> = React.memo(({
                   <div className="flex items-center">
                     <div className="flex-1">
                       <div 
-                        className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer relative group"
-                        title={account.description || 'No description available'}
+                        className="text-sm font-medium text-gray-900 dark:text-white relative group"
+                        title={account.description || undefined}
                       >
                         {account.name.charAt(0).toUpperCase() + account.name.slice(1)}
                         {account.description && (
-                          <div className="absolute left-0 top-full mt-2 w-64 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                          <div className="absolute left-0 top-full mt-2 w-64 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 shadow-lg">
                             {account.description}
                             <div className="absolute top-0 left-4 transform -translate-y-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
                           </div>
