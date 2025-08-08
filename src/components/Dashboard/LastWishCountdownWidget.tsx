@@ -21,6 +21,9 @@ export const LastWishCountdownWidget: React.FC = () => {
         .select('*')
         .eq('user_id', user.id)
         .single();
+      
+      console.log('LastWishCountdownWidget - Fetched data:', data, 'Error:', error);
+      
       if (!error && data && data.is_enabled && data.last_check_in && data.check_in_frequency) {
         setEnabled(true);
         const lastCheckIn = new Date(data.last_check_in);

@@ -135,6 +135,7 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
       }
 
       if (data) {
+        console.log('LastWish - Loading settings from database:', data);
         setSettings({
           isEnabled: data.is_enabled || false,
           checkInFrequency: data.check_in_frequency || 30,
@@ -151,6 +152,44 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
           message: data.message || '',
           isActive: data.is_active || false,
         });
+      } else {
+        // If no data exists, create a default record
+        const defaultSettings = {
+          isEnabled: false,
+          checkInFrequency: 30,
+          lastCheckIn: null,
+          recipients: [],
+          includeData: {
+            accounts: true,
+            transactions: true,
+            purchases: true,
+            lendBorrow: true,
+            savings: true,
+            analytics: true,
+          },
+          message: '',
+          isActive: false,
+        };
+        setSettings(defaultSettings);
+        
+        // Save default settings to database
+        try {
+          await supabase
+            .from('last_wish_settings')
+            .upsert({
+              user_id: user.id,
+              is_enabled: false,
+              check_in_frequency: 30,
+              last_check_in: null,
+              recipients: [],
+              include_data: defaultSettings.includeData,
+              message: '',
+              is_active: false,
+              updated_at: new Date().toISOString(),
+            });
+        } catch (error) {
+          console.error('Error creating default last wish settings:', error);
+        }
       }
     } catch (error) {
       console.error('Error loading last wish settings:', error);
@@ -231,9 +270,15 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
     };
 
     const updatedRecipients = [...settings.recipients, newRecipient];
+    
+    // If this is the first recipient and Last Wish is not enabled, enable it
+    const shouldEnable = updatedRecipients.length === 1 && !settings.isEnabled;
+    
     setSettings(prev => ({
       ...prev,
       recipients: updatedRecipients,
+      isEnabled: shouldEnable ? true : prev.isEnabled,
+      isActive: shouldEnable ? true : prev.isActive,
     }));
 
     // Save to database
@@ -242,19 +287,23 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
         .from('last_wish_settings')
         .upsert({
           user_id: user.id,
-          is_enabled: settings.isEnabled,
+          is_enabled: shouldEnable ? true : settings.isEnabled,
           check_in_frequency: settings.checkInFrequency,
           last_check_in: settings.lastCheckIn,
           recipients: updatedRecipients,
           include_data: settings.includeData,
           message: settings.message,
-          is_active: settings.isActive,
+          is_active: shouldEnable ? true : settings.isActive,
           updated_at: new Date().toISOString(),
         });
 
       if (error) throw error;
 
-      toast.success('Recipient added successfully');
+      if (shouldEnable) {
+        toast.success('Recipient added and Last Wish enabled successfully!');
+      } else {
+        toast.success('Recipient added successfully');
+      }
     } catch (error) {
       console.error('Error adding recipient:', error);
       toast.error('Failed to add recipient');
@@ -262,6 +311,8 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
       setSettings(prev => ({
         ...prev,
         recipients: prev.recipients.filter(r => r.id !== newRecipient.id),
+        isEnabled: settings.isEnabled,
+        isActive: settings.isActive,
       }));
     }
   };
@@ -337,7 +388,11 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
       return;
     }
 
-    setSettings(prev => ({ ...prev, isEnabled: enabled }));
+    setSettings(prev => ({ 
+      ...prev, 
+      isEnabled: enabled,
+      isActive: enabled 
+    }));
     
     try {
       const { error } = await supabase
@@ -361,7 +416,11 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
       console.error('Error toggling last wish:', error);
       toast.error('Failed to update Last Wish status');
       // Revert the state if save failed
-      setSettings(prev => ({ ...prev, isEnabled: !enabled }));
+      setSettings(prev => ({ 
+        ...prev, 
+        isEnabled: !enabled,
+        isActive: !enabled 
+      }));
     }
   };
 
