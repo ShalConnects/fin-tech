@@ -1451,8 +1451,8 @@ export const PurchaseTracker: React.FC = () => {
             </div>
           </div>
         </div>
-        {/* Table Section */}
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="xl:block hidden overflow-x-auto">
           <div className="max-h-[500px] overflow-y-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 text-[14px]">
               <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
@@ -1684,9 +1684,294 @@ export const PurchaseTracker: React.FC = () => {
                 })
               )}
             </tbody>
-          </table>
+                      </table>
             </div>
           </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden max-h-[500px] overflow-y-auto">
+          <div className="space-y-4 px-2.5">
+            {filteredPurchases.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                  <ShoppingBag className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No purchase records found</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                  Start tracking your purchases and shopping lists by adding your first item
+                </p>
+              </div>
+            ) : (
+              sortData(filteredPurchases).map((purchase) => {
+                const isSelected = selectedPurchaseId === purchase.id;
+                return (
+                  <div 
+                    key={purchase.id} 
+                    id={`purchase-${purchase.id}`}
+                    className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+                  >
+                    {/* Card Header - Item Name and Date */}
+                    <div className="flex items-center justify-between p-4 pb-2">
+                      <div className="flex-1">
+                        <div className="text-base font-medium text-gray-900 dark:text-white mb-1">
+                          {purchase.item_name}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {format(new Date(purchase.purchase_date), 'MMM dd, yyyy')}
+                        </div>
+                      </div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-white">
+                        {formatCurrency(purchase.price, purchase.currency)}
+                      </div>
+                    </div>
+
+                    {/* Card Body - Category and Status */}
+                    <div className="px-4 pb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{
+                            backgroundColor: purchaseCategories.find(c => c.category_name === purchase.category)?.category_color || '#6B7280'
+                          }}
+                        />
+                        <span className="text-sm text-gray-900 dark:text-white">{purchase.category}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(purchase.status)}
+                        {getPriorityBadge(purchase.priority)}
+                      </div>
+                    </div>
+
+                    {/* Card Footer - Actions */}
+                    <div className="flex items-center justify-between px-4 pb-4 pt-2 border-t border-gray-100 dark:border-gray-800">
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        {purchase.notes && purchase.notes.length > 0 ? 'Has notes' : 'No notes'}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            setSelectedPurchaseForModal(purchase);
+                            setShowNotesModal(true);
+                            // Fetch existing attachments for this purchase
+                            try {
+                              console.log('Loading modal attachments for purchase:', purchase.id);
+                              const { data: existingAttachments, error: attachmentsError } = await supabase
+                                .from('purchase_attachments')
+                                .select('*')
+                                .eq('purchase_id', purchase.id);
+                              
+                              console.log('Modal attachments query result:', { data: existingAttachments, error: attachmentsError });
+                              
+                              if (!attachmentsError && existingAttachments) {
+                                setModalAttachments(existingAttachments);
+                                console.log('Loaded modal attachments:', existingAttachments);
+                                console.log('Modal attachments count:', existingAttachments.length);
+                              } else {
+                                console.log('No modal attachments found or error:', attachmentsError);
+                                setModalAttachments([]);
+                              }
+                            } catch (err) {
+                              console.error('Error loading attachments:', err);
+                              setModalAttachments([]);
+                            }
+                          }}
+                          className="p-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                          title="View Notes and Attachments"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            setEditingPurchase(purchase);
+                            setFormData({
+                              item_name: purchase.item_name,
+                              category: purchase.category,
+                              price: purchase.price.toString(),
+                              currency: purchase.currency,
+                              purchase_date: purchase.purchase_date,
+                              status: purchase.status,
+                              priority: purchase.priority,
+                              notes: purchase.notes || ''
+                            });
+                            
+                            // Set the exclude from calculation state based on the purchase data
+                            setExcludeFromCalculation(purchase.exclude_from_calculation || false);
+                            
+                            // Load existing attachments for this purchase
+                            try {
+                              console.log('Loading attachments for purchase:', purchase.id);
+                              const { data: existingAttachments, error: attachmentsError } = await supabase
+                                .from('purchase_attachments')
+                                .select('*')
+                                .eq('purchase_id', purchase.id);
+                              
+                              console.log('Attachments query result:', { data: existingAttachments, error: attachmentsError });
+                              
+                              if (!attachmentsError && existingAttachments) {
+                                setPurchaseAttachments(existingAttachments);
+                                console.log('Loaded existing attachments:', existingAttachments);
+                              } else {
+                                console.log('No attachments found or error:', attachmentsError);
+                                setPurchaseAttachments([]);
+                              }
+                            } catch (err) {
+                              console.error('Error loading attachments:', err);
+                              setPurchaseAttachments([]);
+                            }
+                            
+                            // Load account information from linked transaction or purchase record
+                            if (purchase.account_id) {
+                              // For excluded purchases, use the account_id stored in the purchase record
+                              setSelectedAccountId(purchase.account_id);
+                              console.log('Loaded account from purchase record:', purchase.account_id);
+                            } else if (purchase.transaction_id) {
+                              // For normal purchases, load from linked transaction
+                              try {
+                                const { data: linkedTransaction, error } = await supabase
+                                  .from('transactions')
+                                  .select('account_id')
+                                  .eq('transaction_id', purchase.transaction_id)
+                                  .single();
+                                
+                                if (linkedTransaction && !error) {
+                                  setSelectedAccountId(linkedTransaction.account_id);
+                                  console.log('Loaded account from linked transaction:', linkedTransaction.account_id);
+                                } else {
+                                  console.log('No linked transaction found for purchase:', purchase.transaction_id);
+                                  setSelectedAccountId('');
+                                }
+                              } catch (err) {
+                                console.error('Error loading linked transaction:', err);
+                                setSelectedAccountId('');
+                              }
+                            } else {
+                              setSelectedAccountId('');
+                            }
+                            
+                            setShowPurchaseForm(true);
+                          }}
+                          className="p-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => { setPurchaseToDelete(purchase); setShowDeleteModal(true); }}
+                          className="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Tablet Stacked Table View */}
+        <div className="hidden lg:block xl:hidden max-h-[500px] overflow-y-auto">
+          <div className="space-y-4 px-2.5">
+            {filteredPurchases.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                  <ShoppingBag className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No purchase records found</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                  Start tracking your purchases and shopping lists by adding your first purchase
+                </p>
+              </div>
+            ) : (
+              filteredPurchases.map((purchase) => {
+                const category = purchaseCategories.find(c => c.category_name === purchase.category);
+                
+                return (
+                  <div
+                    key={purchase.id}
+                    className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    {/* Row 1: Item Name, Date, Price, Actions */}
+                    <div className="grid grid-cols-12 gap-2 p-3 border-b border-gray-100 dark:border-gray-800">
+                      <div className="col-span-4">
+                        <div className="font-medium text-gray-900 dark:text-white truncate">
+                          {purchase.item_name}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {format(new Date(purchase.purchase_date), 'MMM dd, yyyy')}
+                        </div>
+                      </div>
+                      <div className="col-span-3">
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
+                          {formatCurrency(purchase.price, purchase.currency)}
+                        </div>
+                      </div>
+                      <div className="col-span-3">
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
+                          {purchase.status}
+                        </div>
+                      </div>
+                      <div className="col-span-2 flex items-center justify-end gap-1">
+                        <button
+                          onClick={async () => {
+                            setEditingPurchase(purchase);
+                            setFormData({
+                              item_name: purchase.item_name,
+                              category: purchase.category,
+                              price: purchase.price.toString(),
+                              currency: purchase.currency,
+                              purchase_date: purchase.purchase_date,
+                              status: purchase.status,
+                              priority: purchase.priority,
+                              notes: purchase.notes || ''
+                            });
+                            setExcludeFromCalculation(purchase.exclude_from_calculation || false);
+                            setShowPurchaseForm(true);
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                          title="Edit purchase"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => { setPurchaseToDelete(purchase); setShowDeleteModal(true); }}
+                          className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                          title="Delete purchase"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Row 2: Category, Account, Notes */}
+                    <div className="grid grid-cols-12 gap-2 p-3">
+                      <div className="col-span-4">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Category</div>
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {purchase.category || 'Uncategorized'}
+                        </div>
+                      </div>
+                      <div className="col-span-4">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Priority</div>
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {purchase.priority}
+                        </div>
+                      </div>
+                      <div className="col-span-4">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Notes</div>
+                        <div className="text-sm text-gray-900 dark:text-white truncate">
+                          {purchase.notes || '-'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Purchase Form Modal */}

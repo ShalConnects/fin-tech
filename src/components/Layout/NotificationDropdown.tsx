@@ -69,8 +69,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
     dismissNotification,
     clearAll,
   } = useNotificationStore();
-  
-
 
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
 
@@ -116,159 +114,162 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-end pt-16">
+    <div className="fixed inset-0 z-[99999] flex items-start pt-16">
       <div className="fixed inset-0 bg-black bg-opacity-25" onClick={onClose} />
       
-      <div
-        ref={dropdownRef}
-        className="relative w-96 max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-2">
-            <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {t('notifications.title', 'Notifications')}
-            </h3>
-            {unreadCount > 0 && (
-              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            {unreadCount > 0 && (
+      {/* Mobile: centered, Desktop: right-aligned */}
+      <div className="w-full flex justify-center md:justify-end px-4 md:px-0 md:pr-4">
+        <div
+          ref={dropdownRef}
+          className="relative w-full max-w-sm md:w-96 max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-2">
+              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {t('notifications.title', 'Notifications')}
+              </h3>
+              {unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                >
+                  {t('notifications.markAllRead', 'Mark all read')}
+                </button>
+              )}
               <button
-                onClick={markAllAsRead}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                onClick={onClose}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                {t('notifications.markAllRead', 'Mark all read')}
+                <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               </button>
-            )}
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button
-              onClick={onClose}
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onClick={() => setActiveTab('all')}
+              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'all'
+                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
             >
-              <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              {t('notifications.all', 'All')}
+            </button>
+            <button
+              onClick={() => setActiveTab('unread')}
+              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'unread'
+                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              {t('notifications.unread', 'Unread')}
+              {unreadCount > 0 && (
+                <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
             </button>
           </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'all'
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            {t('notifications.all', 'All')}
-          </button>
-          <button
-            onClick={() => setActiveTab('unread')}
-            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'unread'
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            {t('notifications.unread', 'Unread')}
-            {unreadCount > 0 && (
-              <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Notifications List */}
-        <div className="max-h-96 overflow-y-auto">
-          {filteredNotifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Bell className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
-                {activeTab === 'unread' 
-                  ? t('notifications.noUnread', 'No unread notifications')
-                  : t('notifications.noNotifications', 'No notifications yet')
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50 border-l-4 ${getNotificationColor(notification.type)} ${
-                    !notification.read ? 'bg-blue-50 dark:bg-blue-900/10' : ''
-                  }`}
-                >
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 mt-0.5">
-                      {notification.icon ? (
-                        <span className="text-lg">{notification.icon}</span>
-                      ) : (
-                        getNotificationIcon(notification.type)
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <h4 className={`text-sm font-medium ${
-                          !notification.read 
-                            ? 'text-gray-900 dark:text-white' 
-                            : 'text-gray-700 dark:text-gray-300'
-                        }`}>
-                          {notification.title}
-                        </h4>
-                        <button
-                          onClick={(e) => handleDismiss(e, notification.id)}
-                          className="flex-shrink-0 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                        >
-                          <X className="w-3 h-3 text-gray-400" />
-                        </button>
+          {/* Notifications List */}
+          <div className="max-h-96 overflow-y-auto">
+            {filteredNotifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Bell className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  {activeTab === 'unread' 
+                    ? t('notifications.noUnread', 'No unread notifications')
+                    : t('notifications.noNotifications', 'No notifications yet')
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50 border-l-4 ${getNotificationColor(notification.type)} ${
+                      !notification.read ? 'bg-blue-50 dark:bg-blue-900/10' : ''
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {notification.icon ? (
+                          <span className="text-lg">{notification.icon}</span>
+                        ) : (
+                          getNotificationIcon(notification.type)
+                        )}
                       </div>
                       
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {notification.message}
-                      </p>
-                      
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-500">
-                          {formatTimeAgo(notification.createdAt)}
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <h4 className={`text-sm font-medium ${
+                            !notification.read 
+                              ? 'text-gray-900 dark:text-white' 
+                              : 'text-gray-700 dark:text-gray-300'
+                          }`}>
+                            {notification.title}
+                          </h4>
+                          <button
+                            onClick={(e) => handleDismiss(e, notification.id)}
+                            className="flex-shrink-0 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <X className="w-3 h-3 text-gray-400" />
+                          </button>
+                        </div>
                         
-                        {notification.actionText && (
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                              {notification.actionText}
-                            </span>
-                            <ExternalLink className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                          </div>
-                        )}
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          {notification.message}
+                        </p>
+                        
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-gray-500 dark:text-gray-500">
+                            {formatTimeAgo(notification.createdAt)}
+                          </span>
+                          
+                          {notification.actionText && (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                {notification.actionText}
+                              </span>
+                              <ExternalLink className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          {filteredNotifications.length > 0 && (
+            <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={clearAll}
+                className="w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                {t('notifications.clearAll', 'Clear all notifications')}
+              </button>
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        {filteredNotifications.length > 0 && (
-          <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={clearAll}
-              className="w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-            >
-              {t('notifications.clearAll', 'Clear all notifications')}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

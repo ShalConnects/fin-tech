@@ -416,11 +416,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onViewChange }) => {
             </div>
           </div>
 
-          {/* Motivational Quote - Right above recent transactions */}
+          {/* Motivational Quote */}
           <MotivationalQuote />
 
-          {/* Recent Transactions - Full width on mobile */}
-          <div className="w-full bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6">
+          {/* Recent Transactions - Hidden on mobile, shown on desktop */}
+          <div className="hidden lg:block w-full bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t('dashboard.recentTransactions')}</h2>
               <Link 
@@ -445,14 +445,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onViewChange }) => {
           />
         </div>
 
-        {/* Mobile Bottom Section - Notes/Todos moved to bottom on mobile */}
-        <div className="lg:hidden">
+        {/* Mobile Bottom Section - Notes/Todos and Recent Transactions */}
+        <div className="lg:hidden space-y-6">
           <LastWishCountdownWidget />
           <NotesAndTodosWidget />
           <DonationSavingsCard
             t={t}
             formatCurrency={formatCurrency}
           />
+          
+          {/* Recent Transactions - Mobile version */}
+          <div className="w-full bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t('dashboard.recentTransactions')}</h2>
+              <Link 
+                to="/transactions" 
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center space-x-1"
+              >
+                <span>View All</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <RecentTransactions />
+          </div>
         </div>
 
         <FloatingActionButton />

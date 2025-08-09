@@ -137,9 +137,9 @@ export const AccountTable: React.FC<AccountTableProps> = React.memo(({
                       >
                         {account.name.charAt(0).toUpperCase() + account.name.slice(1)}
                         {account.description && (
-                          <div className="absolute left-0 top-full mt-2 w-64 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] shadow-lg">
+                          <div className="absolute left-0 bottom-full mb-2 w-64 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 shadow-xl border border-gray-700">
                             {account.description}
-                            <div className="absolute top-0 left-4 transform -translate-y-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
+                            <div className="absolute bottom-0 left-4 transform translate-y-1/2 w-2 h-2 bg-gray-800 rotate-45 border-r border-b border-gray-700"></div>
                           </div>
                         )}
                       </div>

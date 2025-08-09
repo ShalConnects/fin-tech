@@ -190,87 +190,191 @@ export const LendBorrowList: React.FC<LendBorrowListProps> = ({ records, loading
 
   return (
     <>
-      {/* Mobile Card View */}
-      <div className="block md:hidden space-y-3 p-3">
-        {records.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-              <Handshake className="w-12 h-12 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No lend & borrow records found</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-              Start tracking your lending and borrowing activities by adding your first record
-            </p>
-          </div>
-        ) : (
-          sortData(records).map((record) => (
-            <div 
-              key={record.id} 
-              id={`lendborrow-${record.id}`}
-              className={`
-                bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm
-                hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600
-                transition-all duration-200 ease-in-out
-              `}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${record.status === 'settled' ? 'bg-green-500' : record.status === 'overdue' ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">{record.person_name}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{record.type === 'lend' ? 'Lent' : 'Borrowed'}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold text-gray-900 dark:text-white">
-                    {formatCurrency ? formatCurrency(record.amount, record.currency) : defaultFormatCurrency(record.amount, record.currency)}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{record.currency}</div>
-                </div>
+      {/* Mobile/Tablet Stacked Table View */}
+      <div className="lg:hidden max-h-[500px] overflow-y-auto">
+        <div className="space-y-4 px-2.5">
+          {records.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                <Handshake className="w-12 h-12 text-gray-400" />
               </div>
-              
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center space-x-2">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    record.status === 'settled' 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                      : record.status === 'overdue'
-                      ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                  }`}>
-                    {getStatusIcon(record.status)}
-                    <span className="ml-1">{record.status}</span>
-                  </span>
-                  {record.due_date && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Due: {formatDate(record.due_date)}
-                    </span>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No lend & borrow records found</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                Start tracking your lending and borrowing activities by adding your first record
+              </p>
+            </div>
+          ) : (
+            sortData(records).map((record) => {
+              const recordReturns = returnHistory[record.id] || [];
+              return (
+                <div
+                  key={record.id}
+                  className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                >
+                {/* Row 1: Person Name, Type, Amount, Actions */}
+                <div className="grid grid-cols-12 gap-2 p-3 border-b border-gray-100 dark:border-gray-800">
+                  <div className="col-span-5">
+                    <div className="font-medium text-gray-900 dark:text-white truncate">
+                      {record.person_name}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {record.type === 'lend' ? 'Lent' : 'Borrowed'}
+                    </div>
+                  </div>
+                  <div className="col-span-5 flex flex-col justify-center">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
+                      {formatCurrency ? formatCurrency(record.amount, record.currency) : defaultFormatCurrency(record.amount, record.currency)}
+                    </div>
+                  </div>
+                  <div className="col-span-2 flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => onPartialReturn(record)}
+                      className="p-1 text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                      title="Partial Return"
+                    >
+                      <CornerDownLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onUpdateStatus(record.id, 'settled')}
+                      className="p-1 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                      title="Mark as Settled"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onEdit(record)}
+                      className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(record)}
+                      className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Row 2: Status, Due Date, Currency */}
+                <div className="grid grid-cols-12 gap-2 p-3">
+                  <div className="col-span-4 flex flex-col">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</div>
+                    <div className="text-sm text-gray-900 dark:text-white flex items-center">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        record.status === 'active' 
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                          : record.status === 'settled' 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                          : record.status === 'overdue'
+                          ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      }`}>
+                        {getStatusIcon(record.status)}
+                        <span className="ml-1">{record.status}</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="col-span-4 flex flex-col">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Due Date</div>
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {record.due_date ? formatDate(record.due_date) : '-'}
+                    </div>
+                  </div>
+                  <div className="col-span-4 flex flex-col">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Currency</div>
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {record.currency}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expandable Record Details */}
+                <div className="border-t border-gray-100 dark:border-gray-800">
+                  <button
+                    onClick={() => toggleRowExpansion(record.id)}
+                    className="w-full px-3 py-2 text-left text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-between"
+                  >
+                    <span>Record Details</span>
+                    <svg
+                      className={`w-4 h-4 transition-transform ${isRowExpanded(record.id) ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {isRowExpanded(record.id) && (
+                    <div className="px-3 pb-3 space-y-3">
+                      {/* Record Details */}
+                      <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <div className="text-gray-500 dark:text-gray-400 mb-1">Created</div>
+                          <div className="text-gray-900 dark:text-white">
+                            {record.created_at ? formatDate(record.created_at) : '-'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500 dark:text-gray-400 mb-1">Updated</div>
+                          <div className="text-gray-900 dark:text-white">
+                            {record.updated_at ? formatDate(record.updated_at) : '-'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Total Returned */}
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Returned</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {formatCurrency ? formatCurrency(recordReturns.reduce((sum: number, ret: any) => sum + ret.amount, 0), record.currency) : defaultFormatCurrency(recordReturns.reduce((sum: number, ret: any) => sum + ret.amount, 0), record.currency)}
+                        </div>
+                      </div>
+
+                      {/* Return History */}
+                      {recordReturns.length > 0 && (
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Return History</div>
+                          <div className="space-y-2">
+                            {recordReturns.map((ret: any, index: number) => (
+                              <div key={index} className="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-800 rounded px-2 py-1">
+                                <div className="text-gray-600 dark:text-gray-300">
+                                  {formatDate(ret.return_date)}
+                                </div>
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {formatCurrency ? formatCurrency(ret.amount, record.currency) : defaultFormatCurrency(ret.amount, record.currency)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {record.notes && (
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Notes</div>
+                          <div className="text-xs text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 rounded px-2 py-1">
+                            {record.notes}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={() => onEdit(record)}
-                    className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                    title="Edit"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(record)}
-                    className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+
               </div>
-            </div>
-          ))
+            );
+          })
         )}
+        </div>
       </div>
       
       {/* Desktop Table View */}
-      <table className="hidden md:table min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 text-[14px]">
+      <table className="hidden lg:table min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 text-[14px]">
                   <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10 shadow-sm">
         <tr>
           <th 

@@ -61,7 +61,7 @@ export const Settings: React.FC = () => {
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow dark:shadow-gray-800/50 p-0 pt-0 pb-5 px-4 sm:px-5 w-full mt-0">
       {/* Mobile Tab Selector - Enhanced to match CustomDropdown styling */}
-      <div className="block sm:hidden mb-4">
+      <div className="block sm:hidden mb-4 pt-2.5">
         <div className="relative">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

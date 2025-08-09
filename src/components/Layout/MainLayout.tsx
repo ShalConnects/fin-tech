@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode, useRef } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -11,39 +11,31 @@ import { Settings } from '../Dashboard/Settings';
 import { About } from '../Dashboard/About';
 import { HeaderQuote } from '../Dashboard/HeaderQuote';
 import { useThemeStore } from '../../store/themeStore';
+import { useMobileDetection } from '../../hooks/useMobileDetection';
+import { useMobileSidebar } from '../../context/MobileSidebarContext';
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Start closed on mobile
   const location = useLocation();
   const navigate = useNavigate();
   const [currentView, setCurrentView] = useState(location.pathname.split('/')[2] || 'dashboard');
   const { isSidebarCollapsed } = useThemeStore();
   
-  // Check if screen is mobile/tablet (≤767px)
-  const [isMobile, setIsMobile] = useState(false);
-  const [isVerySmall, setIsVerySmall] = useState(false);
+  const { isMobile, isVerySmall } = useMobileDetection();
+  const { setIsMobileSidebarOpen } = useMobileSidebar();
   
-  useEffect(() => {
-    const checkScreenSize = () => {
-      const width = window.innerWidth;
-      setIsMobile(width <= 767);
-      setIsVerySmall(width <= 468);
-    };
-    
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+  // Force collapse on mobile - always collapsed on mobile
+  const effectiveCollapsed = isMobile ? true : isSidebarCollapsed;
   
-  // Force collapse on mobile
-  const effectiveCollapsed = isMobile || isSidebarCollapsed;
+  // Track if this is the initial load to prevent closing sidebar on mount
+  const isInitialLoad = useRef(true);
+  const previousPathname = useRef(location.pathname);
 
-  // Sync route with currentView
+  // Sync route with currentView and close mobile sidebar on navigation
   useEffect(() => {
     const pathParts = location.pathname.split('/');
     console.log('Route sync - Current location:', location.pathname);
@@ -57,6 +49,34 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     console.log('Route sync - Setting current view to:', view);
     setCurrentView(view);
   }, [location]);
+
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    console.log('Navigation effect triggered:', {
+      isInitialLoad: isInitialLoad.current,
+      previousPathname: previousPathname.current,
+      currentPathname: location.pathname,
+      isMobile,
+      isSidebarOpen
+    });
+    
+    // Skip on initial load
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      previousPathname.current = location.pathname;
+      return;
+    }
+    
+    // Close sidebar if pathname changed and we're on mobile
+    if (previousPathname.current !== location.pathname && isMobile) {
+      console.log('Closing mobile sidebar due to navigation');
+      setIsSidebarOpen(false);
+      setIsMobileSidebarOpen(false);
+    }
+    
+    // Update previous pathname
+    previousPathname.current = location.pathname;
+  }, [location.pathname, isMobile, setIsMobileSidebarOpen]);
 
   // Scroll to top on route change
   useEffect(() => {
@@ -114,7 +134,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <>
-      <div className="h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden">
+      <div className="h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden relative z-0">
         {/* Sidebar for desktop only */}
         {!isMobile && (
           <aside className={`fixed inset-y-0 left-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-30 transition-all duration-300 ease-in-out ${
@@ -133,7 +153,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           !isMobile ? (effectiveCollapsed ? 'ml-16' : 'ml-52') : ''
         }`}>
           <Header 
-            onMenuToggle={() => setIsSidebarOpen(true)} 
+            onMenuToggle={() => {
+              setIsSidebarOpen(true);
+              setIsMobileSidebarOpen(true);
+            }} 
             title={getTitle()}
             subtitle={currentView === 'donations' ? 'See the donations amount you gave from your income' : (
                 currentView === 'accounts'
@@ -154,16 +177,22 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </div>
       {/* Mobile sidebar overlay rendered outside the main flex container */}
       {isMobile && isSidebarOpen && (
-        <div className="fixed inset-0 z-50 flex">
-          <aside className="w-52 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="fixed inset-0 z-[99999] flex">
+          <aside className="w-16 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
             <Sidebar 
               isOpen={isSidebarOpen} 
-              onToggle={() => setIsSidebarOpen(false)}
+              onToggle={() => {
+                setIsSidebarOpen(false);
+                setIsMobileSidebarOpen(false);
+              }}
               currentView={currentView}
               onViewChange={handleViewChange}
             />
           </aside>
-          <div className="flex-1 h-full bg-black bg-opacity-50" onClick={() => setIsSidebarOpen(false)} />
+          <div className="flex-1 h-full bg-black bg-opacity-50" onClick={() => {
+            setIsSidebarOpen(false);
+            setIsMobileSidebarOpen(false);
+          }} />
         </div>
       )}
     </>

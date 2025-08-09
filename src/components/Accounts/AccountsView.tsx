@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Plus, Edit2, Trash2, DollarSign, Info, PlusCircle, InfoIcon, Search, ArrowLeft, Wallet, ChevronUp, ChevronDown, CreditCard } from 'lucide-react';
+import { Plus, Edit2, Trash2, DollarSign, Info, PlusCircle, InfoIcon, Search, ArrowLeft, Wallet, ChevronUp, ChevronDown, CreditCard, Filter } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { AccountForm } from './AccountForm';
 import { TransactionForm } from '../Transactions/TransactionForm';
@@ -77,11 +77,16 @@ export const AccountsView: React.FC = () => {
   const [showCurrencyMenu, setShowCurrencyMenu] = useState(false);
   const [showTypeMenu, setShowTypeMenu] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showMobileFilterMenu, setShowMobileFilterMenu] = useState(false);
+  
+  // Temporary filter state for mobile modal
+  const [tempFilters, setTempFilters] = useState(tableFilters);
 
   // Refs for dropdown menus
   const currencyMenuRef = useRef<HTMLDivElement>(null);
   const typeMenuRef = useRef<HTMLDivElement>(null);
   const statusMenuRef = useRef<HTMLDivElement>(null);
+  const mobileFilterMenuRef = useRef<HTMLDivElement>(null);
 
   // State for row expansion
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -375,6 +380,7 @@ export const AccountsView: React.FC = () => {
       if (currencyMenuRef.current && !currencyMenuRef.current.contains(event.target as Node)) {
         setShowCurrencyMenu(false);
       }
+      // Removed mobile filter menu click outside handler - modal should only close via explicit actions
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -549,6 +555,34 @@ export const AccountsView: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Sync tempFilters with tableFilters when modal opens
+  useEffect(() => {
+    if (showMobileFilterMenu) {
+      setTempFilters(tableFilters);
+    }
+  }, [showMobileFilterMenu, tableFilters]);
+
+  // Handle closing modal without applying filters
+  const handleCloseModal = () => {
+    setShowMobileFilterMenu(false);
+    // Reset tempFilters to current tableFilters when closing without applying
+    setTempFilters(tableFilters);
+  };
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showMobileFilterMenu) {
+        handleCloseModal();
+      }
+    };
+
+    if (showMobileFilterMenu) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [showMobileFilterMenu]);
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -584,6 +618,8 @@ export const AccountsView: React.FC = () => {
       {/* Header */}
       {/* Only keep the header at the top-level layout, remove this one from the body */}
 
+
+
       {/* Unified Table View - New Section */}
       <div className="space-y-6">
 
@@ -611,8 +647,42 @@ export const AccountsView: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <div className="relative" ref={currencyMenuRef}>
+                {/* Mobile Filter Button */}
+                <div className="md:hidden">
+                  <div className="relative" ref={mobileFilterMenuRef}>
+                    <button
+                      onClick={() => setShowMobileFilterMenu(v => !v)}
+                      className={`px-2 py-1.5 text-[13px] h-8 w-8 rounded-md transition-colors flex items-center justify-center ${
+                        (tableFilters.currency || tableFilters.type !== 'all' || tableFilters.status !== 'active')
+                          ? 'text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700' 
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                      style={(tableFilters.currency || tableFilters.type !== 'all' || tableFilters.status !== 'active') ? { background: 'linear-gradient(135deg, #3b82f61f 0%, #8b5cf633 100%)' } : {}}
+                      title="Filters"
+                    >
+                      <Filter className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mobile Add Account Button */}
+                <div className="md:hidden">
+                  <button
+                    onClick={() => {
+                      setEditingAccount(null);
+                      setShowAccountForm(true);
+                    }}
+                    className="bg-gradient-primary text-white px-2 py-1.5 rounded-md hover:bg-gradient-primary-hover transition-colors flex items-center justify-center text-[13px] h-8 w-8"
+                    title="Add Account"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Desktop Filters */}
+                <div className="hidden md:flex items-center gap-x-2">
+                  <div>
+                    <div className="relative" ref={currencyMenuRef}>
                     <button
                       onClick={() => setShowCurrencyMenu(v => !v)}
                       className={`px-3 py-1.5 pr-2 text-[13px] h-8 rounded-md transition-colors flex items-center space-x-1.5 ${
@@ -746,6 +816,7 @@ export const AccountsView: React.FC = () => {
                   <span>Add Account</span>
                 </button>
               </div>
+            </div>
             </div>
           </div>
 
@@ -911,9 +982,9 @@ export const AccountsView: React.FC = () => {
                                 >
                                   {account.name.charAt(0).toUpperCase() + account.name.slice(1)}
                                   {account.description && (
-                                    <div className="absolute left-0 top-full mt-2 w-64 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] shadow-lg">
+                                    <div className="absolute left-0 bottom-full mb-2 w-64 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 shadow-xl border border-gray-700">
                                       {account.description}
-                                      <div className="absolute top-0 left-4 transform -translate-y-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
+                                      <div className="absolute bottom-0 left-4 transform translate-y-1/2 w-2 h-2 bg-gray-800 rotate-45 border-r border-b border-gray-700"></div>
                                     </div>
                                   )}
                                 </div>
@@ -1576,10 +1647,10 @@ export const AccountsView: React.FC = () => {
       )}
 
       {modalOpen && selectedAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4 pt-16">
           <div className="fixed inset-0 bg-black bg-opacity-30" onClick={() => setModalOpen(false)} />
-          <div className="relative bg-white w-full max-w-6xl mx-2 sm:mx-4 rounded-lg shadow-2xl" style={{ maxHeight: '90vh' }}>
-            <div className="p-3 sm:p-4 pt-8">
+          <div className="relative bg-white w-full max-w-6xl rounded-lg shadow-2xl overflow-hidden" style={{ maxHeight: 'calc(100vh - 8rem)' }}>
+            <div className="p-3 sm:p-4 pt-8 max-h-full overflow-y-auto">
               {/* Close Button - Absolute positioned */}
               <button 
                 className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 p-1 z-10" 
@@ -1589,7 +1660,7 @@ export const AccountsView: React.FC = () => {
               </button>
 
               {/* Main Content: Transactions and Account Info */}
-              <div className="flex flex-col lg:flex-row gap-3 sm:gap-4" style={{ height: 'min(70vh, 500px)' }}>
+              <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
                 {/* Left: Transactions List (100% on mobile, 80% on desktop) */}
                 <div className="w-full lg:w-4/5 flex flex-col">
                   <h3 className="text-sm sm:text-base font-bold mb-2">Transactions</h3>
@@ -1720,6 +1791,158 @@ export const AccountsView: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Filter Modal */}
+      {showMobileFilterMenu && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl w-full max-w-xs overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header with Check and Cross */}
+            <div className="bg-white dark:bg-gray-900 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">Filters</span>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Select filters and click ✓ to apply</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setTableFilters(tempFilters);
+                      setShowMobileFilterMenu(false);
+                    }}
+                    className={`p-1 transition-colors ${
+                      (tempFilters.currency || tempFilters.type !== 'all' || tempFilters.status !== 'active')
+                        ? 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                    }`}
+                    title="Apply Filters"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTableFilters({ search: '', currency: '', type: 'all', status: 'active' });
+                      setShowMobileFilterMenu(false);
+                    }}
+                    className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
+                    title="Clear All Filters"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Currency Filter */}
+            <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Currency</div>
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTempFilters({ ...tempFilters, currency: '' });
+                  }}
+                  className={`px-2 py-1 text-xs rounded-full border transition-colors ${
+                    tempFilters.currency === '' 
+                      ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-200' 
+                      : 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  All
+                </button>
+                {currencyOptions.map(currency => (
+                  <button
+                    key={currency}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTempFilters({ ...tempFilters, currency });
+                    }}
+                    className={`px-2 py-1 text-xs rounded-full border transition-colors ${
+                      tempFilters.currency === currency 
+                        ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-200' 
+                        : 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {currency}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Type Filter */}
+            <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Type</div>
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTempFilters({ ...tempFilters, type: 'all' });
+                  }}
+                  className={`px-2 py-1 text-xs rounded-full border transition-colors ${
+                    tempFilters.type === 'all' 
+                      ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-200' 
+                      : 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  All
+                </button>
+                {accountTypes.map(type => (
+                  <button
+                    key={type}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTempFilters({ ...tempFilters, type });
+                    }}
+                    className={`px-2 py-1 text-xs rounded-full border transition-colors ${
+                      tempFilters.type === type 
+                        ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-200' 
+                        : 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Status Filter */}
+            <div className="px-3 py-2">
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Status</div>
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTempFilters({ ...tempFilters, status: 'active' });
+                  }}
+                  className={`px-2 py-1 text-xs rounded-full border transition-colors ${
+                    tempFilters.status === 'active' 
+                      ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-200' 
+                      : 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Active
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTempFilters({ ...tempFilters, status: 'all' });
+                  }}
+                  className={`px-2 py-1 text-xs rounded-full border transition-colors ${
+                    tempFilters.status === 'all' 
+                      ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-200' 
+                      : 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  All
+                </button>
               </div>
             </div>
           </div>

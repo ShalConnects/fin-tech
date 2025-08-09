@@ -27,6 +27,17 @@ export interface CategoryModalProps {
   isIncomeCategory?: boolean;
 }
 
+// Currency data with symbols and full names
+const currencyData = {
+  USD: { symbol: '$', name: 'US Dollar' },
+  BDT: { symbol: '৳', name: 'Bangladeshi Taka' },
+  EUR: { symbol: '€', name: 'Euro' },
+  GBP: { symbol: '£', name: 'British Pound' },
+  JPY: { symbol: '¥', name: 'Japanese Yen' },
+  CAD: { symbol: 'C$', name: 'Canadian Dollar' },
+  AUD: { symbol: 'A$', name: 'Australian Dollar' },
+};
+
 export const CategoryModal: React.FC<CategoryModalProps> = ({
   open,
   initialValues = {
@@ -56,6 +67,14 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   if (isEdit && initialValues.currency && !userCurrencyOptions.includes(initialValues.currency)) {
     userCurrencyOptions = [...userCurrencyOptions, initialValues.currency];
   }
+
+  // Create enhanced currency options with symbols and full names
+  const enhancedCurrencyOptions = userCurrencyOptions.map(currency => ({
+    value: currency,
+    label: `${currencyData[currency as keyof typeof currencyData]?.symbol || currency} ${currency} - ${currencyData[currency as keyof typeof currencyData]?.name || currency}`,
+    icon: currencyData[currency as keyof typeof currencyData]?.symbol || currency
+  }));
+
   const [formData, setFormData] = useState({ ...initialValues });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -99,51 +118,50 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   }, [formData]);
 
   const handleBlur = (field: string) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
-    setErrors(validate());
+    setTouched(prev => ({ ...prev, [field]: true }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormSubmitted(true);
-    const newErrors = validate();
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
+    
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     setSubmitting(true);
-    await onSave(formData);
-    setSubmitting(false);
-    onClose();
+    try {
+      await onSave(formData);
+    } catch (error) {
+      console.error('Error saving category:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const isFormValid =
-    isIncomeCategory
-      ? formData.category_name && formData.category_name.trim() !== '' && Object.keys(errors).length === 0
-      : formData.category_name &&
-        formData.category_name.trim() !== '' &&
-        formData.monthly_budget !== undefined &&
-        formData.monthly_budget !== null &&
-        String(formData.monthly_budget).trim() !== '' &&
-        !isNaN(Number(formData.monthly_budget)) &&
-        Number(formData.monthly_budget) > 0 &&
-        Object.keys(errors).length === 0;
-
-  // Helper to get input classes with error state (copied from TransactionForm)
   const getInputClasses = (field: string) => {
-    const base = "w-full px-4 py-2 text-[14px] h-10 rounded-lg border transition-colors duration-200 bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white dark:border-gray-600";
-    const error = "border-red-300 focus:ring-red-500 focus:border-red-500 dark:border-red-600";
-    const normal = "border-gray-200 focus:ring-blue-500";
-    return `${base} ${errors[field] && (touched[field] || formSubmitted) ? error : normal}`;
+    const baseClasses = "w-full px-4 py-2 text-[14px] h-10 rounded-lg border transition-colors duration-200";
+    const hasError = errors[field] && (touched[field] || formSubmitted);
+    
+    if (hasError) {
+      return `${baseClasses} bg-red-50 text-red-900 border-red-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-red-900/20 dark:text-red-100 dark:border-red-600`;
+    }
+    
+    return `${baseClasses} bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white dark:border-gray-600`;
   };
+
+  const isFormValid = Object.keys(errors).length === 0;
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-[38rem] max-h-[90vh] overflow-y-auto z-50 shadow-xl transition-all" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {title ? title : (isEdit ? 'Edit Purchase Category' : 'Add New Purchase Category')}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {title || (isEdit ? 'Edit Category' : 'Add New Category')}
           </h2>
           <button
             onClick={onClose}
@@ -200,7 +218,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                   <CustomDropdown
                     value={formData.currency || ''}
                     onChange={val => setFormData({ ...formData, currency: val })}
-                    options={userCurrencyOptions.map(opt => ({ value: opt, label: opt }))}
+                    options={enhancedCurrencyOptions}
                     placeholder="Select currency"
                     fullWidth={true}
                   />
@@ -262,7 +280,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                   <CustomDropdown
                     value={formData.currency || ''}
                     onChange={val => setFormData({ ...formData, currency: val })}
-                    options={userCurrencyOptions.map(opt => ({ value: opt, label: opt }))}
+                    options={enhancedCurrencyOptions}
                     placeholder="Select currency"
                     fullWidth={true}
                   />

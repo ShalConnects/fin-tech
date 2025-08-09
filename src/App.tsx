@@ -34,6 +34,7 @@ import { FavoriteQuotes } from './pages/FavoriteQuotes';
 import { WelcomeModal } from './components/common/WelcomeModal';
 import { Analytics } from '@vercel/analytics/react';
 import { useNotificationStore } from './store/notificationStore';
+import { MobileSidebarProvider } from './context/MobileSidebarContext';
 
 function AppContent() {
   const user = useAuthStore((state) => state.user);
@@ -295,16 +296,18 @@ function AppContent() {
 function App() {
   return (
     <LoadingProvider>
-      <Router>
-        <AppContent />
-      </Router>
-      {/* Test Panels - Only show in development */}
-      {import.meta.env.DEV && (
-        <>
-          <TestAuthPanel />
-        </>
-      )}
-      <Analytics />
+      <MobileSidebarProvider>
+        <Router>
+          <AppContent />
+        </Router>
+        {/* Test Panels - Only show in development */}
+        {import.meta.env.DEV && (
+          <>
+            <TestAuthPanel />
+          </>
+        )}
+        <Analytics />
+      </MobileSidebarProvider>
     </LoadingProvider>
   );
 }

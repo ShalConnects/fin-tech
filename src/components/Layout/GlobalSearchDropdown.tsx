@@ -18,6 +18,7 @@ interface GlobalSearchDropdownProps {
   inputRef: React.RefObject<HTMLInputElement>;
   dropdownRef: React.RefObject<HTMLDivElement>;
   onClose: () => void;
+  isOverlay?: boolean; // New prop to indicate if this is in an overlay
 }
 
 // Synonyms/aliases for search
@@ -51,7 +52,13 @@ function addRecentSearch(term: string) {
   localStorage.setItem(RECENT_KEY, JSON.stringify(recents));
 }
 
-export const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ isFocused, inputRef, dropdownRef, onClose }) => {
+export const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ 
+  isFocused, 
+  inputRef, 
+  dropdownRef, 
+  onClose, 
+  isOverlay = false 
+}) => {
   const { globalSearchTerm, transactions, accounts, setGlobalSearchTerm, purchases, lendBorrowRecords } = useFinanceStore();
   const navigate = useNavigate();
   const [transfers, setTransfers] = useState<any[]>([]);
@@ -362,7 +369,7 @@ export const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ isFo
   // console.log('Checking dropdown visibility:', { search, isFocused, searchLength: search?.length });
   if ((!search || search.length === 0) && isFocused) {
     return (
-      <div className="absolute left-0 top-full w-[125%] ml-[-12.5%] z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-4 animate-fadein">
+      <div className={`${isOverlay ? 'relative w-full' : 'absolute left-0 top-full w-[125%] ml-[-12.5%]'} z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-4 animate-fadein`}>
         <div className="font-semibold text-gray-700 mb-2">Recent Searches</div>
         {recentSearches.length === 0 ? (
           <div className="text-gray-400 text-sm">No recent searches</div>
@@ -411,11 +418,11 @@ export const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ isFo
     <div
       ref={dropdownRef}
       style={{
-        position: 'absolute',
-        left: 0,
-        top: '100%',
-        width: '125%',
-        marginLeft: '-12.5%',
+        position: isOverlay ? 'relative' : 'absolute',
+        left: isOverlay ? 'auto' : 0,
+        top: isOverlay ? 'auto' : '100%',
+        width: isOverlay ? '100%' : '125%',
+        marginLeft: isOverlay ? 'auto' : '-12.5%',
         zIndex: 9999,
         boxSizing: 'border-box',
         maxHeight: search ? '70vh' : '55vh',

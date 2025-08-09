@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { LendBorrowInput } from '../../types/index';
+import { useMobileDetection } from '../../hooks/useMobileDetection';
+import { useMobileSidebar } from '../../context/MobileSidebarContext';
 
 // Define the props for our new ActionButton component.
 interface ActionButtonProps {
@@ -56,6 +58,8 @@ export const FloatingActionButton: React.FC = () => {
   const [showInBetweenTransferModal, setShowInBetweenTransferModal] = useState(false);
   const [showLendBorrowForm, setShowLendBorrowForm] = useState(false);
   const [showTip, setShowTip] = useState(true);
+  const { isMobile } = useMobileDetection();
+  const { isMobileSidebarOpen } = useMobileSidebar();
   const { 
     setShowTransactionForm, 
     showTransactionForm, 
@@ -196,7 +200,7 @@ export const FloatingActionButton: React.FC = () => {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+      <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end ${isMobile && isMobileSidebarOpen ? 'hidden' : ''}`}>
         <div className="relative flex flex-col items-end">
           {/* Animated Menu Items - now absolutely positioned above the FAB */}
           <Transition

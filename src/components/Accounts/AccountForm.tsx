@@ -521,7 +521,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ isOpen, onClose, accou
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="flex-1 px-4 py-2 bg-gradient-primary text-white rounded-lg hover:bg-gradient-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               disabled={submitting || Object.keys(errors).length > 0}
             >
                              {submitting ? (

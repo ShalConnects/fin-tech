@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, AlertCircle, DollarSign, Calendar, AlertTriangle } from 'lucide-react';
+import { X, AlertCircle, Calendar, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { LendBorrow, LendBorrowReturn } from '../../types/index';
@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Loader } from '../common/Loader';
+import { getCurrencySymbol } from '../../utils/currency';
 
 interface PartialReturnModalProps {
   isOpen: boolean;
@@ -198,13 +199,15 @@ export const PartialReturnModal: React.FC<PartialReturnModalProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className={fieldRowClass}>
-            <div className={fieldColClass + ' relative'}>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 flex flex-col">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Return Amount ({record.currency})
               </label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm font-medium">
+                  {getCurrencySymbol(record.currency)}
+                </span>
                 <input
                   ref={amountRef}
                   type="number"
@@ -231,14 +234,16 @@ export const PartialReturnModal: React.FC<PartialReturnModalProps> = ({
                   </button>
                 )}
               </div>
-              {error && touched.amount && (
-                <p className="mt-1 text-xs text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {error}
-                </p>
-              )}
+              <div className="h-5 mt-1">
+                {error && touched.amount && (
+                  <p className="text-xs text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {error}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className={fieldColClass}>
+            <div className="flex-1 flex flex-col">
               <label className="block text-sm font-medium text-gray-700 mb-1">Return Date</label>
               <div className="flex items-center bg-gray-100 px-4 pr-[10px] text-[14px] h-10 rounded-lg w-full">
                 <Calendar className="w-4 h-4 mr-2 text-gray-400" />
@@ -266,6 +271,9 @@ export const PartialReturnModal: React.FC<PartialReturnModalProps> = ({
                 >
                   Today
                 </button>
+              </div>
+              <div className="h-5 mt-1">
+                {/* Consistent spacing */}
               </div>
             </div>
           </div>

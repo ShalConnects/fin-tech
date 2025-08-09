@@ -679,75 +679,160 @@ const DonationsSavingsPage: React.FC = () => {
             </div>
           </div>
           
-          {/* Table Section */}
-        <div className="overflow-x-auto">
-          <div className="max-h-[500px] overflow-y-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800 text-[14px]">
-              <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
-                <tr>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    onClick={() => handleSort('date')}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Date</span>
-                      {getSortIcon('date')}
+          {/* Desktop Table View */}
+          <div className="hidden xl:block overflow-x-auto">
+            <div className="max-h-[500px] overflow-y-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800 text-[14px]">
+                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
+                  <tr>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => handleSort('date')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Date</span>
+                        {getSortIcon('date')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => handleSort('original_amount')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Original Amount</span>
+                        {getSortIcon('original_amount')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => handleSort('donation_amount')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Donation Amount</span>
+                        {getSortIcon('donation_amount')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => handleSort('mode')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Mode</span>
+                        {getSortIcon('mode')}
+                      </div>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <span className="flex items-center gap-1">
+                        Transaction
+                        <Tooltip content={
+                          <>This is the reference ID generated for each transaction. You can use it to cross-reference with the main Transactions page.</>
+                        }>
+                          <span tabIndex={0} className="inline-flex items-center">
+                        <HelpCircle className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                      </span>
+                        </Tooltip>
+                      </span>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => handleSort('status')}
+                    >
+                      <div className="flex items-center justify-center space-x-1">
+                        <span>Status</span>
+                        {getSortIcon('status')}
+                      </div>
+                    </th>
+                </tr>
+              </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {filteredRecords.length === 0 ? (
+                  <tr>
+                      <td colSpan={6} className="py-16 text-center">
+                    <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                      <Heart className="w-12 h-12 text-gray-400" />
                     </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    onClick={() => handleSort('original_amount')}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Original Amount</span>
-                      {getSortIcon('original_amount')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    onClick={() => handleSort('donation_amount')}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Donation Amount</span>
-                      {getSortIcon('donation_amount')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    onClick={() => handleSort('mode')}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Mode</span>
-                      {getSortIcon('mode')}
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    <span className="flex items-center gap-1">
-                      Transaction
-                      <Tooltip content={
-                        <>This is the reference ID generated for each transaction. You can use it to cross-reference with the main Transactions page.</>
-                      }>
-                        <span tabIndex={0} className="inline-flex items-center">
-                      <HelpCircle className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                    </span>
-                      </Tooltip>
-                    </span>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    onClick={() => handleSort('status')}
-                  >
-                    <div className="flex items-center justify-center space-x-1">
-                      <span>Status</span>
-                      {getSortIcon('status')}
-                    </div>
-                  </th>
-              </tr>
-            </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredRecords.length === 0 ? (
-                <tr>
-                    <td colSpan={6} className="py-16 text-center">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No donation records found</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                      Start tracking your donations and savings by adding your first record
+                    </p>
+                  </td>
+                  </tr>
+                ) : (
+                    filteredRecords.map((record) => {
+                    const transaction = transactions.find(t => t.id === record.transaction_id);
+                    const account = transaction ? accounts.find(a => a.id === transaction.account_id) : undefined;
+                    const currency = account ? account.currency : 'USD';
+                    return (
+                        <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {formatDate(record.created_at)}
+                        </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {transaction ? `${currencySymbols[currency] || currency}${transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                        </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            {`${currencySymbols[currency] || currency}${record.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getModeBadge(record.mode, record.mode_value, currency)}
+                      </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
+                            {transaction ? (
+      <span className="inline-flex items-center gap-1">
+        #{transaction.transaction_id}
+        <button
+          type="button"
+          onClick={() => transaction.transaction_id && handleCopyTransactionId(transaction.transaction_id)}
+          className="ml-1 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none"
+          title="Copy transaction ID"
+          aria-label="Copy transaction ID"
+        >
+          <Copy className="w-3 h-3" />
+        </button>
+      </span>
+    ) : (
+      '-'
+    )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <button
+                              type="button"
+                          onClick={() => handleToggleStatus(record)}
+                              className={
+                                record.status === 'donated'
+                                  ? "inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold text-xs hover:bg-green-100 dark:hover:bg-green-900/50 transition"
+                                  : "inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 font-semibold text-xs hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition"
+                              }
+                              aria-label={record.status === 'donated' ? "Mark as Pending" : "Mark as Donated"}
+                              title={record.status === 'donated' ? "Mark as Pending" : "Mark as Donated"}
+                      >
+                        {record.status === 'donated' ? (
+                                <>
+                                  <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400" />
+                                  Donated
+                                </>
+                        ) : (
+                                <>
+                          <Clock className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />
+                                  Pending
+                                </>
+                        )}
+                            </button>
+                      </td>
+                        </tr>
+                      );
+                    })
+                  )}
+              </tbody>
+            </table>
+              </div>
+            </div>
+
+          {/* Tablet Stacked Table View */}
+          <div className="hidden lg:block xl:hidden max-h-[500px] overflow-y-auto">
+            <div className="space-y-4 px-2.5">
+              {filteredRecords.length === 0 ? (
+                <div className="py-16 text-center">
                   <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
                     <Heart className="w-12 h-12 text-gray-400" />
                   </div>
@@ -755,77 +840,204 @@ const DonationsSavingsPage: React.FC = () => {
                   <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
                     Start tracking your donations and savings by adding your first record
                   </p>
-                </td>
-                </tr>
+                </div>
               ) : (
-                  filteredRecords.map((record) => {
+                filteredRecords.map((record) => {
                   const transaction = transactions.find(t => t.id === record.transaction_id);
                   const account = transaction ? accounts.find(a => a.id === transaction.account_id) : undefined;
                   const currency = account ? account.currency : 'USD';
+                  
                   return (
-                      <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {formatDate(record.created_at)}
-                      </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {transaction ? `${currencySymbols[currency] || currency}${transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
-                      </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                          {`${currencySymbols[currency] || currency}${record.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                      </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getModeBadge(record.mode, record.mode_value, currency)}
-                    </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
-                          {transaction ? (
-    <span className="inline-flex items-center gap-1">
-      #{transaction.transaction_id}
-      <button
-        type="button"
-        onClick={() => transaction.transaction_id && handleCopyTransactionId(transaction.transaction_id)}
-        className="ml-1 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none"
-        title="Copy transaction ID"
-        aria-label="Copy transaction ID"
-      >
-        <Copy className="w-3 h-3" />
-      </button>
-    </span>
-  ) : (
-    '-'
-  )}
-                    </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <div key={record.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                      {/* Row 1: Date, Original Amount, Donation Amount */}
+                      <div className="grid grid-cols-3 gap-4 p-4 border-b border-gray-100 dark:border-gray-700">
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Date</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {formatDate(record.created_at)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Original Amount</div>
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {transaction ? `${currencySymbols[currency] || currency}${transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Donation Amount</div>
+                          <div className="text-sm font-bold text-green-600 dark:text-green-400">
+                            {`${currencySymbols[currency] || currency}${record.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Row 2: Mode, Transaction ID, Status */}
+                      <div className="grid grid-cols-3 gap-4 p-4">
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Mode</div>
+                          <div>{getModeBadge(record.mode, record.mode_value, currency)}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Transaction ID</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+                            {transaction ? (
+                              <span className="inline-flex items-center gap-1">
+                                #{transaction.transaction_id}
+                                <button
+                                  type="button"
+                                  onClick={() => transaction.transaction_id && handleCopyTransactionId(transaction.transaction_id)}
+                                  className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none"
+                                  title="Copy transaction ID"
+                                  aria-label="Copy transaction ID"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ) : (
+                              '-'
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</div>
                           <button
                             type="button"
-                        onClick={() => handleToggleStatus(record)}
+                            onClick={() => handleToggleStatus(record)}
                             className={
                               record.status === 'donated'
-                                ? "inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold text-xs hover:bg-green-100 dark:hover:bg-green-900/50 transition"
-                                : "inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 font-semibold text-xs hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition"
+                                ? "inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold text-xs hover:bg-green-100 dark:hover:bg-green-900/50 transition"
+                                : "inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 font-semibold text-xs hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition"
                             }
                             aria-label={record.status === 'donated' ? "Mark as Pending" : "Mark as Donated"}
                             title={record.status === 'donated' ? "Mark as Pending" : "Mark as Donated"}
-                    >
-                      {record.status === 'donated' ? (
+                          >
+                            {record.status === 'donated' ? (
                               <>
-                                <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400" />
+                                <CheckCircle className="w-3 h-3 text-green-500 dark:text-green-400" />
                                 Donated
                               </>
-                      ) : (
+                            ) : (
                               <>
-                        <Clock className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />
+                                <Clock className="w-3 h-3 text-yellow-500 dark:text-yellow-400" />
                                 Pending
                               </>
-                      )}
+                            )}
                           </button>
-                    </td>
-                  </tr>
-                );
-                  })
-                )}
-            </tbody>
-          </table>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-4 px-2.5">
+            {filteredRecords.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                  <Heart className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No donation records found</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                  Start tracking your donations and savings by adding your first record
+                </p>
+              </div>
+            ) : (
+              filteredRecords.map((record) => {
+                const transaction = transactions.find(t => t.id === record.transaction_id);
+                const account = transaction ? accounts.find(a => a.id === transaction.account_id) : undefined;
+                const currency = account ? account.currency : 'USD';
+                
+                return (
+                  <div key={record.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    {/* Card Header */}
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {formatDate(record.created_at)}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(record)}
+                          className={
+                            record.status === 'donated'
+                              ? "inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold text-xs hover:bg-green-100 dark:hover:bg-green-900/50 transition"
+                              : "inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 font-semibold text-xs hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition"
+                          }
+                          aria-label={record.status === 'donated' ? "Mark as Pending" : "Mark as Donated"}
+                          title={record.status === 'donated' ? "Mark as Pending" : "Mark as Donated"}
+                        >
+                          {record.status === 'donated' ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 text-green-500 dark:text-green-400" />
+                              Donated
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3 text-yellow-500 dark:text-yellow-400" />
+                              Pending
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Card Body */}
+                    <div className="px-4 py-3 space-y-3">
+                      {/* Amounts Row */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Original Amount</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {transaction ? `${currencySymbols[currency] || currency}${transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Donation Amount</div>
+                          <div className="text-sm font-bold text-green-600 dark:text-green-400">
+                            {`${currencySymbols[currency] || currency}${record.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mode */}
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Mode</div>
+                        <div>{getModeBadge(record.mode, record.mode_value, currency)}</div>
+                      </div>
+
+                      {/* Transaction ID */}
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Transaction ID</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+                          {transaction ? (
+                            <span className="inline-flex items-center gap-1">
+                              #{transaction.transaction_id}
+                              <button
+                                type="button"
+                                onClick={() => transaction.transaction_id && handleCopyTransactionId(transaction.transaction_id)}
+                                className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none"
+                                title="Copy transaction ID"
+                                aria-label="Copy transaction ID"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ) : (
+                            '-'
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
       </div>
       </div>

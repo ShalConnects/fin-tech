@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { toast } from 'sonner';
@@ -79,10 +79,27 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
   const [editingRecipient, setEditingRecipient] = useState<any>(null);
   const [showMessage, setShowMessage] = useState(false);
   const [daysUntilCheckIn, setDaysUntilCheckIn] = useState<number | null>(null);
+  const messageEditorRef = useRef<HTMLDivElement>(null);
+  const [isEditorInitialized, setIsEditorInitialized] = useState(false);
 
   // Load settings from database
   useEffect(() => {
     loadLastWishSettings();
+  }, [user]);
+
+  // Debug: Check current database state
+  useEffect(() => {
+    if (user) {
+      const debugDatabase = async () => {
+        const { data, error } = await supabase
+          .from('last_wish_settings')
+          .select('*')
+          .eq('user_id', user.id);
+        
+        console.log('LastWish - Current database state:', data, 'Error:', error);
+      };
+      debugDatabase();
+    }
   }, [user]);
 
   // Fetch lend/borrow records
@@ -123,25 +140,66 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      console.log('LastWish - Loading settings for user:', user.id);
+      
+      // First, get all records for this user to check for duplicates
+      const { data: allRecords, error: fetchError } = await supabase
         .from('last_wish_settings')
         .select('*')
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', user.id);
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading last wish settings:', error);
+      console.log('LastWish - All records for user:', allRecords);
+
+      if (fetchError) {
+        console.error('Error fetching all records:', fetchError);
         return;
       }
 
-      if (data) {
-        console.log('LastWish - Loading settings from database:', data);
-        setSettings({
-          isEnabled: data.is_enabled || false,
-          checkInFrequency: data.check_in_frequency || 30,
-          lastCheckIn: data.last_check_in,
-          recipients: data.recipients || [],
-          includeData: data.include_data || {
+      let data: any = null;
+
+      // If there are multiple records, delete all but the most recent one
+      if (allRecords && allRecords.length > 1) {
+        console.log('LastWish - Found duplicate records, cleaning up...');
+        
+        // Sort by updated_at and keep the most recent
+        const sortedRecords = allRecords.sort((a, b) => 
+          new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
+        );
+        
+        const recordToKeep = sortedRecords[0];
+        const recordsToDelete = sortedRecords.slice(1);
+        
+        console.log('LastWish - Keeping record:', recordToKeep.id);
+        console.log('LastWish - Deleting records:', recordsToDelete.map(r => r.id));
+        
+        // Delete duplicate records
+        for (const record of recordsToDelete) {
+          const { error: deleteError } = await supabase
+            .from('last_wish_settings')
+            .delete()
+            .eq('id', record.id);
+          
+          if (deleteError) {
+            console.error('Error deleting duplicate record:', deleteError);
+          }
+        }
+        
+        // Use the record we kept
+        data = recordToKeep;
+        console.log('LastWish - Using cleaned record:', data);
+      } else if (allRecords && allRecords.length === 1) {
+        // Only one record, use it
+        data = allRecords[0];
+        console.log('LastWish - Using single record:', data);
+      } else {
+        // No records found, create default settings
+        console.log('LastWish - No records found, creating default settings');
+        const defaultSettings = {
+          user_id: user.id,
+          is_enabled: false,
+          check_in_frequency: 30,
+          recipients: [],
+          include_data: {
             accounts: true,
             transactions: true,
             purchases: true,
@@ -149,12 +207,21 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
             savings: true,
             analytics: true,
           },
-          message: data.message || '',
-          isActive: data.is_active || false,
-        });
-      } else {
-        // If no data exists, create a default record
-        const defaultSettings = {
+          message: '',
+          is_active: false,
+        };
+
+        const { error: createError } = await supabase
+          .from('last_wish_settings')
+          .upsert(defaultSettings);
+
+        if (createError) {
+          console.error('Error creating default settings:', createError);
+          return;
+        }
+        
+        // Set default settings in state
+        setSettings({
           isEnabled: false,
           checkInFrequency: 30,
           lastCheckIn: null,
@@ -169,30 +236,33 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
           },
           message: '',
           isActive: false,
-        };
-        setSettings(defaultSettings);
-        
-        // Save default settings to database
-        try {
-          await supabase
-            .from('last_wish_settings')
-            .upsert({
-              user_id: user.id,
-              is_enabled: false,
-              check_in_frequency: 30,
-              last_check_in: null,
-              recipients: [],
-              include_data: defaultSettings.includeData,
-              message: '',
-              is_active: false,
-              updated_at: new Date().toISOString(),
-            });
-        } catch (error) {
-          console.error('Error creating default last wish settings:', error);
-        }
+        });
+        return;
+      }
+
+      // Process the data we found
+      if (data) {
+        console.log('LastWish - Loading settings from database:', data);
+        console.log('LastWish - is_enabled:', data.is_enabled, 'is_active:', data.is_active);
+        setSettings({
+          isEnabled: Boolean(data.is_enabled),
+          checkInFrequency: data.check_in_frequency || 30,
+          lastCheckIn: data.last_check_in,
+          recipients: data.recipients || [],
+          includeData: data.include_data || {
+            accounts: true,
+            transactions: true,
+            purchases: true,
+            lendBorrow: true,
+            savings: true,
+            analytics: true,
+          },
+          message: data.message || '',
+          isActive: Boolean(data.is_active),
+        });
       }
     } catch (error) {
-      console.error('Error loading last wish settings:', error);
+      console.error('Error in loadLastWishSettings:', error);
     }
   };
 
@@ -262,6 +332,16 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
       return;
     }
 
+    // Check for duplicate email
+    const emailExists = settings.recipients.some(
+      existingRecipient => existingRecipient.email.toLowerCase() === recipient.email.toLowerCase()
+    );
+
+    if (emailExists) {
+      toast.error('A recipient with this email already exists');
+      return;
+    }
+
     const newRecipient = {
       id: Date.now().toString(),
       email: recipient.email,
@@ -283,19 +363,23 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
 
     // Save to database
     try {
+      const saveData = {
+        user_id: user.id,
+        is_enabled: shouldEnable ? true : Boolean(settings.isEnabled),
+        check_in_frequency: settings.checkInFrequency,
+        last_check_in: settings.lastCheckIn,
+        recipients: updatedRecipients,
+        include_data: settings.includeData,
+        message: settings.message,
+        is_active: shouldEnable ? true : Boolean(settings.isActive),
+        updated_at: new Date().toISOString(),
+      };
+      
+      console.log('LastWish - Saving recipient data:', saveData);
+      
       const { error } = await supabase
         .from('last_wish_settings')
-        .upsert({
-          user_id: user.id,
-          is_enabled: shouldEnable ? true : settings.isEnabled,
-          check_in_frequency: settings.checkInFrequency,
-          last_check_in: settings.lastCheckIn,
-          recipients: updatedRecipients,
-          include_data: settings.includeData,
-          message: settings.message,
-          is_active: shouldEnable ? true : settings.isActive,
-          updated_at: new Date().toISOString(),
-        });
+        .upsert(saveData);
 
       if (error) throw error;
 
@@ -395,19 +479,23 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
     }));
     
     try {
+      const saveData = {
+        user_id: user.id,
+        is_enabled: Boolean(enabled),
+        check_in_frequency: settings.checkInFrequency,
+        last_check_in: settings.lastCheckIn,
+        recipients: settings.recipients,
+        include_data: settings.includeData,
+        message: settings.message,
+        is_active: Boolean(enabled),
+        updated_at: new Date().toISOString(),
+      };
+      
+      console.log('LastWish - Saving toggle data:', saveData);
+      
       const { error } = await supabase
         .from('last_wish_settings')
-        .upsert({
-          user_id: user.id,
-          is_enabled: enabled,
-          check_in_frequency: settings.checkInFrequency,
-          last_check_in: settings.lastCheckIn,
-          recipients: settings.recipients,
-          include_data: settings.includeData,
-          message: settings.message,
-          is_active: enabled,
-          updated_at: new Date().toISOString(),
-        });
+        .upsert(saveData);
 
       if (error) throw error;
 
@@ -452,6 +540,180 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
       toast.error('Failed to update check-in frequency');
       // Revert the state if save failed
       setSettings(prev => ({ ...prev, checkInFrequency: settings.checkInFrequency }));
+    }
+  };
+
+  // Text Editor Functions
+  const formatText = (command: string) => {
+    if (messageEditorRef.current) {
+      document.execCommand(command, false);
+      messageEditorRef.current.focus();
+    }
+  };
+
+  const insertText = (text: string) => {
+    if (messageEditorRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        
+        // Handle line breaks properly
+        if (text.includes('\n')) {
+          const lines = text.split('\n');
+          lines.forEach((line, index) => {
+            if (index > 0) {
+              // Insert line break
+              const br = document.createElement('br');
+              range.insertNode(br);
+              range.setStartAfter(br);
+            }
+            if (line) {
+              // Insert text
+              const textNode = document.createTextNode(line);
+              range.insertNode(textNode);
+              range.setStartAfter(textNode);
+            }
+          });
+        } else {
+          // Insert regular text
+          const textNode = document.createTextNode(text);
+          range.insertNode(textNode);
+          range.setStartAfter(textNode);
+        }
+        
+        // Update selection
+        selection.removeAllRanges();
+        selection.addRange(range);
+        messageEditorRef.current.focus();
+      }
+    }
+  };
+
+  const clearMessage = () => {
+    if (messageEditorRef.current) {
+      messageEditorRef.current.innerHTML = '';
+      setSettings(prev => ({ ...prev, message: '' }));
+    }
+  };
+
+  const handleMessageInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const content = e.currentTarget.innerHTML;
+    // Only update if content actually changed to prevent unnecessary re-renders
+    if (content !== settings.message) {
+      setSettings(prev => ({ ...prev, message: content }));
+    }
+  };
+
+  // Initialize editor content only once
+  useEffect(() => {
+    if (messageEditorRef.current && settings.message && !isEditorInitialized) {
+      messageEditorRef.current.innerHTML = settings.message;
+      setIsEditorInitialized(true);
+    }
+  }, [settings.message, isEditorInitialized]);
+
+  const handleMessageBlur = () => {
+    if (messageEditorRef.current) {
+      const content = messageEditorRef.current.innerHTML;
+      setSettings(prev => ({ ...prev, message: content }));
+    }
+  };
+
+  const handleMessageFocus = () => {
+    if (messageEditorRef.current) {
+      // Ensure cursor is at the end when focusing
+      const selection = window.getSelection();
+      if (selection) {
+        const range = document.createRange();
+        range.selectNodeContents(messageEditorRef.current);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+  };
+
+  // Add placeholder effect
+  useEffect(() => {
+    if (messageEditorRef.current) {
+      const element = messageEditorRef.current;
+      const placeholder = element.getAttribute('data-placeholder');
+      
+      const handleFocus = () => {
+        if (element.textContent === placeholder) {
+          element.textContent = '';
+        }
+      };
+      
+      const handleBlur = () => {
+        if (element.textContent === '') {
+          element.textContent = placeholder;
+        }
+      };
+      
+      // Set initial placeholder if empty
+      if (!element.textContent && placeholder) {
+        element.textContent = placeholder;
+      }
+      
+      element.addEventListener('focus', handleFocus);
+      element.addEventListener('blur', handleBlur);
+      
+      return () => {
+        element.removeEventListener('focus', handleFocus);
+        element.removeEventListener('blur', handleBlur);
+      };
+    }
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      // Insert a line break at cursor position
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const br = document.createElement('br');
+        range.deleteContents();
+        range.insertNode(br);
+        
+        // Move cursor after the line break
+        range.setStartAfter(br);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+  };
+
+  const saveMessage = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('last_wish_settings')
+        .upsert({
+          user_id: user.id,
+          is_enabled: settings.isEnabled,
+          check_in_frequency: settings.checkInFrequency,
+          last_check_in: settings.lastCheckIn,
+          recipients: settings.recipients,
+          include_data: settings.includeData,
+          message: settings.message,
+          is_active: settings.isActive,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+      toast.success('Message saved successfully');
+    } catch (error) {
+      console.error('Error saving message:', error);
+      toast.error('Failed to save message');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -721,12 +983,93 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
             <span>{showMessage ? 'Hide' : 'Show'}</span>
           </button>
         </div>
-        <textarea
-          value={settings.message}
-          onChange={(e) => setSettings(prev => ({ ...prev, message: e.target.value }))}
-          placeholder="Write a personal message to be included with your data..."
-          className="w-full h-32 p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-        />
+        <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+          {/* Text Editor Toolbar */}
+          <div className="bg-gray-50 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600 p-2 flex flex-wrap gap-1">
+            <button
+              type="button"
+              onClick={() => formatText('bold')}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+              title="Bold"
+            >
+              <strong>B</strong>
+            </button>
+            <button
+              type="button"
+              onClick={() => formatText('italic')}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+              title="Italic"
+            >
+              <em>I</em>
+            </button>
+            <button
+              type="button"
+              onClick={() => formatText('underline')}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+              title="Underline"
+            >
+              <u>U</u>
+            </button>
+            <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
+            <button
+              type="button"
+              onClick={() => insertText('\n• ')}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+              title="Bullet List"
+            >
+              • List
+            </button>
+            <button
+              type="button"
+              onClick={() => insertText('\n1. ')}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+              title="Numbered List"
+            >
+              1. List
+            </button>
+            <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
+            <button
+              type="button"
+              onClick={() => insertText('\n\n')}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+              title="New Line"
+            >
+              ↵
+            </button>
+            <button
+              type="button"
+              onClick={clearMessage}
+              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+              title="Clear Message"
+            >
+              Clear
+            </button>
+          </div>
+          {/* Text Editor */}
+          <div
+            ref={messageEditorRef}
+            contentEditable
+            className="w-full p-3 min-h-[120px] max-h-[300px] overflow-y-auto focus:outline-none dark:bg-gray-700 dark:text-white resize-y"
+            onInput={handleMessageInput}
+            onBlur={handleMessageBlur}
+            onFocus={handleMessageFocus}
+            onKeyDown={handleKeyDown}
+            data-placeholder="Write a personal message to be included with your data..."
+          />
+        </div>
+        <div className="flex justify-between items-center mt-2">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {settings.message.length} characters
+          </span>
+          <button
+            type="button"
+            onClick={saveMessage}
+            disabled={loading}
+            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Saving...' : 'Save Message'}
+          </button>
+        </div>
       </div>
 
       {/* Save Button */}
@@ -748,6 +1091,7 @@ export const LastWish: React.FC<LastWishProps> = ({ setActiveTab, forceFreeAcces
           onAdd={addRecipient}
           editingRecipient={editingRecipient}
           currentRecipientCount={settings.recipients.length}
+          currentRecipients={settings.recipients}
         />
       )}
     </div>
@@ -760,9 +1104,10 @@ interface RecipientModalProps {
   onAdd: (recipient: any) => Promise<void>;
   editingRecipient: any;
   currentRecipientCount: number;
+  currentRecipients: Array<{ id: string; email: string; name: string; relationship: string; }>;
 }
 
-const RecipientModal: React.FC<RecipientModalProps> = ({ onClose, onAdd, editingRecipient, currentRecipientCount }) => {
+const RecipientModal: React.FC<RecipientModalProps> = ({ onClose, onAdd, editingRecipient, currentRecipientCount, currentRecipients }) => {
   const [formData, setFormData] = useState({
     name: editingRecipient?.name || '',
     email: editingRecipient?.email || '',
@@ -773,6 +1118,18 @@ const RecipientModal: React.FC<RecipientModalProps> = ({ onClose, onAdd, editing
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
+    // Check for duplicate email before submitting
+    const emailExists = currentRecipients.some(
+      existingRecipient => existingRecipient.email.toLowerCase() === formData.email.toLowerCase()
+    );
+
+    if (emailExists) {
+      toast.error('A recipient with this email already exists');
+      setIsSubmitting(false);
+      return;
+    }
+    
     try {
       await onAdd(formData);
       onClose();

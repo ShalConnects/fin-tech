@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ArrowUpRight, ArrowDownLeft, Handshake, AlertTriangle, ArrowRight, Calendar, HelpCircle } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Handshake, AlertTriangle, ArrowRight, Calendar, HelpCircle, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { LendBorrow } from '../../types/index';
 import { StatCard } from './StatCard';
 import { CustomDropdown } from '../Purchases/CustomDropdown';
 import { formatCurrency } from '../../utils/currency';
+import { useMobileDetection } from '../../hooks/useMobileDetection';
 
 export const LendBorrowSummaryCard: React.FC = () => {
   const { user, profile } = useAuthStore();
@@ -13,7 +14,10 @@ export const LendBorrowSummaryCard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showLentTooltip, setShowLentTooltip] = useState(false);
   const [showBorrowedTooltip, setShowBorrowedTooltip] = useState(false);
+  const [showLentMobileModal, setShowLentMobileModal] = useState(false);
+  const [showBorrowedMobileModal, setShowBorrowedMobileModal] = useState(false);
   const [filterCurrency, setFilterCurrency] = useState('');
+  const { isMobile } = useMobileDetection();
 
   // Get all unique currencies from records
   const recordCurrencies = useMemo(() => {
@@ -109,18 +113,24 @@ export const LendBorrowSummaryCard: React.FC = () => {
                     <button
                       type="button"
                       className="ml-1 p-1 rounded-full hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                      onMouseEnter={() => setShowLentTooltip(true)}
-                      onMouseLeave={() => setShowLentTooltip(false)}
-                      onFocus={() => setShowLentTooltip(true)}
-                      onBlur={() => setShowLentTooltip(false)}
-                      onClick={() => setShowLentTooltip(v => !v)}
+                      onMouseEnter={() => !isMobile && setShowLentTooltip(true)}
+                      onMouseLeave={() => !isMobile && setShowLentTooltip(false)}
+                      onFocus={() => !isMobile && setShowLentTooltip(true)}
+                      onBlur={() => !isMobile && setShowLentTooltip(false)}
+                      onClick={() => {
+                        if (isMobile) {
+                          setShowLentMobileModal(true);
+                        } else {
+                          setShowLentTooltip(v => !v);
+                        }
+                      }}
                       tabIndex={0}
                       aria-label="Show lent info"
                     >
                       <HelpCircle className="w-4 h-4 text-gray-400" />
                     </button>
-                    {showLentTooltip && (
-                      <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg bg-white border border-gray-200 shadow-lg p-3 text-xs text-gray-700 animate-fadein capitalize">
+                    {showLentTooltip && !isMobile && (
+                      <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg p-3 text-xs text-gray-700 dark:text-gray-200 animate-fadein capitalize">
                         <div className="font-semibold mb-2 text-xs">Total: <span className="font-bold">{formatCurrency(totalActiveLent, filterCurrency)}</span></div>
                         <div className="font-medium mb-1 text-xs">People Lent To ({Object.keys(lentByPerson).length}):</div>
                         <ul className="space-y-1">
@@ -146,18 +156,24 @@ export const LendBorrowSummaryCard: React.FC = () => {
                     <button
                       type="button"
                       className="ml-1 p-1 rounded-full hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                      onMouseEnter={() => setShowBorrowedTooltip(true)}
-                      onMouseLeave={() => setShowBorrowedTooltip(false)}
-                      onFocus={() => setShowBorrowedTooltip(true)}
-                      onBlur={() => setShowBorrowedTooltip(false)}
-                      onClick={() => setShowBorrowedTooltip(v => !v)}
+                      onMouseEnter={() => !isMobile && setShowBorrowedTooltip(true)}
+                      onMouseLeave={() => !isMobile && setShowBorrowedTooltip(false)}
+                      onFocus={() => !isMobile && setShowBorrowedTooltip(true)}
+                      onBlur={() => !isMobile && setShowBorrowedTooltip(false)}
+                      onClick={() => {
+                        if (isMobile) {
+                          setShowBorrowedMobileModal(true);
+                        } else {
+                          setShowBorrowedTooltip(v => !v);
+                        }
+                      }}
                       tabIndex={0}
                       aria-label="Show borrowed info"
                     >
                       <HelpCircle className="w-4 h-4 text-gray-400" />
                     </button>
-                    {showBorrowedTooltip && (
-                      <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg bg-white border border-gray-200 shadow-lg p-3 text-xs text-gray-700 animate-fadein capitalize">
+                    {showBorrowedTooltip && !isMobile && (
+                      <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg p-3 text-xs text-gray-700 dark:text-gray-200 animate-fadein capitalize">
                         <div className="font-semibold mb-2 text-xs">Total: <span className="font-bold">{formatCurrency(totalActiveBorrowed, filterCurrency)}</span></div>
                         <div className="font-medium mb-1 text-xs">People Borrowed From ({Object.keys(borrowedByPerson).length}):</div>
                         <ul className="space-y-1">
@@ -179,6 +195,60 @@ export const LendBorrowSummaryCard: React.FC = () => {
           </div>
           {/* Removed Upcoming Due Notification block as it's now handled by the Urgent sidebar */}
         </>
+      )}
+
+      {/* Mobile Modal for Lent Info */}
+      {showLentMobileModal && isMobile && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowLentMobileModal(false)} />
+          <div className="relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg p-3 w-64 animate-fadein capitalize">
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-semibold text-gray-700 dark:text-gray-200 text-xs">Total: <span className="font-bold">{formatCurrency(totalActiveLent, filterCurrency)}</span></div>
+              <button
+                onClick={() => setShowLentMobileModal(false)}
+                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="font-medium mb-1 text-gray-700 dark:text-gray-200 text-xs">People Lent To ({Object.keys(lentByPerson).length}):</div>
+            <ul className="space-y-1 max-h-48 overflow-y-auto">
+              {Object.entries(lentByPerson).map(([person, amount]) => (
+                <li key={person} className="flex justify-between text-xs text-gray-700 dark:text-gray-200">
+                  <span className="truncate max-w-[120px]" title={person}>{person}</span>
+                  <span className="ml-2 tabular-nums">{formatCurrency(amount, filterCurrency)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Modal for Borrowed Info */}
+      {showBorrowedMobileModal && isMobile && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowBorrowedMobileModal(false)} />
+          <div className="relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg p-3 w-64 animate-fadein capitalize">
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-semibold text-gray-700 dark:text-gray-200 text-xs">Total: <span className="font-bold">{formatCurrency(totalActiveBorrowed, filterCurrency)}</span></div>
+              <button
+                onClick={() => setShowBorrowedMobileModal(false)}
+                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="font-medium mb-1 text-gray-700 dark:text-gray-200 text-xs">People Borrowed From ({Object.keys(borrowedByPerson).length}):</div>
+            <ul className="space-y-1 max-h-48 overflow-y-auto">
+              {Object.entries(borrowedByPerson).map(([person, amount]) => (
+                <li key={person} className="flex justify-between text-xs text-gray-700 dark:text-gray-200">
+                  <span className="truncate max-w-[120px]" title={person}>{person}</span>
+                  <span className="ml-2 tabular-nums">{formatCurrency(amount, filterCurrency)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       )}
     </div>
   );

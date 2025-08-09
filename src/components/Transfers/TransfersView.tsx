@@ -249,9 +249,57 @@ export const TransfersView: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Unified Tabs and Content Area */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {/* Enhanced Tabs with Counts and Search - OPTION 1 */}
+      {/* Mobile Header (only for screens under 768px) */}
+      <div className="md:hidden bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex flex-col gap-3 mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search transfers..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
+            />
+          </div>
+          <button
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-primary text-white rounded-md hover:bg-gradient-primary-hover transition-colors text-sm font-medium"
+            onClick={() => setShowTransferTypeModal(true)}
+          >
+            <Plus className="h-4 w-4" /> New Transfer
+          </button>
+        </div>
+
+        {/* Mobile Tabs */}
+        <div className="flex flex-wrap gap-1">
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                selectedTab === tab.key 
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+              onClick={() => setSelectedTab(tab.key)}
+            >
+              <div className="flex items-center gap-2">
+                <span>{tab.label}</span>
+                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                  selectedTab === tab.key 
+                    ? 'bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200' 
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                }`}>
+                  {transferCounts[tab.key as keyof typeof transferCounts]}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop Header (original design for 768px and above) */}
+      <div className="hidden md:block bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* Enhanced Tabs with Counts and Search - ORIGINAL DESIGN */}
         <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <div className="flex items-center justify-between">
             <div className="flex flex-1">
@@ -364,7 +412,7 @@ export const TransfersView: React.FC = () => {
                           <div className="text-lg font-bold text-green-600">{formatCurrency(transfer.amount, dpsAccount?.currency || 'USD')}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">Balance: {formatCurrency(dpsAccountBalance, dpsAccount?.currency || 'USD')}</div>
                         </div>
-                          </div>
+                      </div>
                       
                       <div 
                         className="flex justify-between items-center border-t border-gray-100 dark:border-gray-700"
@@ -452,11 +500,179 @@ export const TransfersView: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                </div>
+                  </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Transfers List (only for screens under 768px) */}
+      <div className="md:hidden bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="p-4 max-h-96 overflow-y-auto">
+          {filteredTransfers.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 dark:text-gray-500 mb-2">
+                {searchTerm ? (
+                  <Search className="h-12 w-12 mx-auto" />
+                ) : (
+                  <div className="h-12 w-12 mx-auto bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                    <ArrowRight className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+                  </div>
+                )}
               </div>
-            )}
+              <div className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                {searchTerm ? 'No transfers found' : 'No transfers yet'}
+              </div>
+              <div className="text-gray-500 dark:text-gray-400">
+                {searchTerm 
+                  ? 'Try adjusting your search terms' 
+                  : 'Create your first transfer to get started'
+                }
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredTransfers.map((transfer, idx) => {
+                const isSelected = selectedTransferId === transfer.id || selectedTransferId === transfer.transaction_id;
+                const transferId = transfer.id || transfer.transaction_id || `transfer-${idx}`;
+                
+                if (transfer.type === 'dps') {
+                  const mainAccount = accounts.find(a => a.id === transfer.from_account_id);
+                  const dpsAccount = accounts.find(a => a.id === transfer.to_account_id);
+                  if (!mainAccount || !dpsAccount) return null;
+                  const mainAccountBalance = mainAccount ? calculateRunningBalance(mainAccount.id, transfer.date, accounts, allTransactions) : 0;
+                  const dpsAccountBalance = dpsAccount ? calculateRunningBalance(dpsAccount.id, transfer.date, accounts, allTransactions) : 0;
+                  
+                  return (
+                    <div 
+                      key={transfer.id || idx} 
+                      id={`transfer-${transferId}`}
+                      className={`border border-gray-200 dark:border-gray-600 rounded-lg p-4 transition-all duration-200 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500 bg-white dark:bg-gray-800 ${isSelected ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+                    >
+                      {/* Transfer Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium">DPS Transfer</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {format(new Date(transfer.date), 'MMM d, yyyy')} • {format(new Date(transfer.date), 'h:mm a')}
+                          </span>
+                        </div>
+                        {transfer.transaction_id && (
+                          <button
+                            onClick={() => handleCopyTransactionId(transfer.transaction_id!)}
+                            className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                          >
+                            <span className="font-mono">#{formatTransactionId(transfer.transaction_id)}</span>
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Transfer Details */}
+                      <div className="grid grid-cols-1 gap-4 items-center">
+                        {/* From Account */}
+                        <div className="text-center">
+                          <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{mainAccount?.name}</div>
+                          <div className="text-lg font-bold text-red-600">{formatCurrency(transfer.amount, mainAccount?.currency || 'USD')}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Balance: {formatCurrency(mainAccountBalance, mainAccount?.currency || 'USD')}</div>
+                        </div>
+                        
+                        {/* Center Arrow */}
+                        <div className="flex justify-center">
+                          <ArrowRight className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+                        </div>
+                        
+                        {/* To Account */}
+                        <div className="text-center">
+                          <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{dpsAccount?.name}</div>
+                          <div className="text-lg font-bold text-green-600">{formatCurrency(transfer.amount, dpsAccount?.currency || 'USD')}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Balance: {formatCurrency(dpsAccountBalance, dpsAccount?.currency || 'USD')}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Note */}
+                      {transfer.note && (
+                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                          <div className="text-sm text-gray-600 dark:text-gray-400">{transfer.note}</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                const fromAccountBalance = transfer.fromAccount ? calculateRunningBalance(transfer.fromAccount.id, transfer.date, accounts, allTransactions) : 0;
+                const toAccountBalance = transfer.toAccount ? calculateRunningBalance(transfer.toAccount.id, transfer.date, accounts, allTransactions) : 0;
+                
+                return (
+                  <div 
+                    key={transfer.id || idx} 
+                    id={`transfer-${transferId}`}
+                    className={`border border-gray-200 dark:border-gray-600 rounded-lg p-4 transition-all duration-200 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500 bg-white dark:bg-gray-800 ${isSelected ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+                  >
+                    {/* Transfer Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {transfer.type === 'currency' && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 font-medium">Currency Transfer</span>
+                        )}
+                        {transfer.type === 'inbetween' && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 font-medium">In-account Transfer</span>
+                        )}
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {format(new Date(transfer.date), 'MMM d, yyyy')} • {transfer.time}
+                        </span>
+                      </div>
+                      {transfer.transaction_id && (
+                        <button
+                          onClick={() => handleCopyTransactionId(transfer.transaction_id!)}
+                          className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                        >
+                          <span className="font-mono">#{formatTransactionId(transfer.transaction_id)}</span>
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Transfer Details */}
+                    <div className="grid grid-cols-1 gap-4 items-center">
+                      {/* From Account */}
+                      <div className="text-center">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{transfer.fromAccount?.name}</div>
+                        <div className="text-lg font-bold text-red-600">{formatCurrency(transfer.fromAmount, transfer.fromCurrency || 'USD')}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Balance: {formatCurrency(fromAccountBalance, transfer.fromCurrency || 'USD')}</div>
+                      </div>
+                      
+                      {/* Center Arrow + Exchange Rate */}
+                      <div className="flex flex-col items-center">
+                        <ArrowRight className="h-6 w-6 text-gray-400 dark:text-gray-500 mb-2" />
+                        {transfer.exchangeRate && transfer.exchangeRate !== 1 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 text-center bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                            {transfer.exchangeRate.toFixed(4)}<br/>{transfer.fromCurrency}→{transfer.toCurrency}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* To Account */}
+                      <div className="text-center">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{transfer.toAccount?.name}</div>
+                        <div className="text-lg font-bold text-green-600">{formatCurrency(transfer.toAmount, transfer.toCurrency || 'USD')}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Balance: {formatCurrency(toAccountBalance, transfer.toCurrency || 'USD')}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Note */}
+                    {transfer.note && (
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{transfer.note}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
       

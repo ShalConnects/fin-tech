@@ -166,7 +166,7 @@ export const MotivationalQuote: React.FC = () => {
           <div className="flex items-center gap-2">
             <Heart className="w-4 h-4 text-red-500 animate-pulse" />
             <span className="text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wide">
-              {t('dashboard.dailyInspiration')}
+              Daily Inspiration
             </span>
           </div>
         </div>
@@ -187,12 +187,6 @@ export const MotivationalQuote: React.FC = () => {
               </cite>
               
               <div className="flex items-center space-x-2">
-                {error && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {t('dashboard.offlineMode')}
-                  </span>
-                )}
-                
                 <button
                   onClick={fetchQuote}
                   disabled={loading}

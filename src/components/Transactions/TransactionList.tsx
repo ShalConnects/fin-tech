@@ -872,8 +872,8 @@ export const TransactionList: React.FC<{
             </div>
           </div>
         </div>
-        {/* Table Section */}
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="lg:block hidden overflow-x-auto">
           <div className="max-h-[500px] overflow-y-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 text-[14px]">
               <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
@@ -1008,6 +1008,192 @@ export const TransactionList: React.FC<{
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden max-h-[500px] overflow-y-auto">
+          <div className="space-y-4 px-2.5">
+            {filteredTransactions.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                  <TrendingUp className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No transaction records found</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                  Start tracking your income and expenses by adding your first transaction
+                </p>
+              </div>
+            ) : (
+              filteredTransactions.map((transaction) => {
+                const account = accounts.find(a => a.id === transaction.account_id);
+                const currency = account?.currency || 'USD';
+                const isSelected = selectedTransactionId === transaction.transaction_id || selectedTransactionId === transaction.id;
+                return (
+                  <div 
+                    key={transaction.id} 
+                    id={`transaction-${transaction.transaction_id || transaction.id}`}
+                    className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+                  >
+                    {/* Card Header - Date and Type Badge */}
+                    <div className="flex items-center justify-between p-3 pb-2">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                      </div>
+                      <div>
+                        {transaction.type === 'income' ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300">
+                            <ArrowDownRight className="w-2.5 h-2.5" /> Income
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300">
+                            <ArrowUpRight className="w-2.5 h-2.5" /> Expense
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Body - Description and Amount */}
+                    <div className="px-3 pb-2">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                        {transaction.description}
+                      </div>
+                      {transaction.transaction_id && (
+                        <button
+                          onClick={() => handleCopyTransactionId(transaction.transaction_id!)}
+                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors mb-1"
+                        >
+                          <span className="font-mono">#{formatTransactionId(transaction.transaction_id)}</span>
+                          <Copy className="w-2.5 h-2.5" />
+                        </button>
+                      )}
+                      <div className="text-base font-bold text-gray-900 dark:text-white">
+                        {formatCurrency(transaction.amount, selectedCurrency)}
+                      </div>
+                    </div>
+
+                    {/* Card Footer - Account and Actions */}
+                    <div className="flex items-center justify-between px-3 pb-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        {getAccountName(transaction.account_id)}
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleEdit(transaction)}
+                          className="p-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => { setTransactionToDelete(transaction); setShowDeleteModal(true); }}
+                          className="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Tablet Stacked Table View */}
+        <div className="hidden lg:block xl:hidden max-h-[500px] overflow-y-auto">
+          <div className="space-y-4 px-2.5">
+            {filteredTransactions.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                  <TrendingUp className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No transaction records found</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                  Start tracking your income and expenses by adding your first transaction
+                </p>
+              </div>
+            ) : (
+              filteredTransactions.map((transaction) => {
+                const account = accounts.find(a => a.id === transaction.account_id);
+                const currency = account?.currency || 'USD';
+                const isSelected = selectedTransactionId === transaction.transaction_id || selectedTransactionId === transaction.id;
+                return (
+                  <div 
+                    key={transaction.id} 
+                    id={`transaction-${transaction.transaction_id || transaction.id}`}
+                    className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+                  >
+                    {/* Primary Row - Date, Description, Amount, Actions */}
+                    <div className="grid grid-cols-12 gap-2 items-center mb-3">
+                      <div className="col-span-3">
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{format(new Date(transaction.date), 'MMM dd, yyyy')}</div>
+                      </div>
+                      <div className="col-span-6">
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{transaction.description}</div>
+                        {transaction.transaction_id && (
+                          <button
+                            onClick={() => handleCopyTransactionId(transaction.transaction_id!)}
+                            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors mt-1"
+                          >
+                            <span className="font-mono">#{formatTransactionId(transaction.transaction_id)}</span>
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="col-span-2">
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(transaction.amount, selectedCurrency)}</div>
+                      </div>
+                      <div className="col-span-1">
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</div>
+                        <div className="flex gap-2 items-center">
+                          <button
+                            onClick={() => handleEdit(transaction)}
+                            className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => { setTransactionToDelete(transaction); setShowDeleteModal(true); }}
+                            className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Secondary Row - Account, Type */}
+                    <div className="grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-6">
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Account</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{getAccountName(transaction.account_id)}</div>
+                      </div>
+                      <div className="col-span-6">
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</div>
+                        <div>
+                          {transaction.type === 'income' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300">
+                              <ArrowDownRight className="w-3 h-3" /> Income
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300">
+                              <ArrowUpRight className="w-3 h-3" /> Expense
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

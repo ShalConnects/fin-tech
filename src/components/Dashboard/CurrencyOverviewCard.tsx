@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { StatCard } from './StatCard';
 import { CustomDropdown } from '../Purchases/CustomDropdown';
 import { LineChart, Line } from 'recharts';
-import { Info, Calendar, Clock } from 'lucide-react';
+import { Info, Calendar, Clock, X } from 'lucide-react';
+import { useMobileDetection } from '../../hooks/useMobileDetection';
 
 interface CurrencyOverviewCardProps {
   currency: string;
@@ -31,6 +32,8 @@ export const CurrencyOverviewCard: React.FC<CurrencyOverviewCardProps> = ({
 
   // Tooltip state
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showMobileModal, setShowMobileModal] = useState(false);
+  const { isMobile } = useMobileDetection();
   // Get all accounts for this currency
   const currencyAccounts = accounts.filter(acc => acc.currency === currency);
 
@@ -191,17 +194,23 @@ export const CurrencyOverviewCard: React.FC<CurrencyOverviewCardProps> = ({
             <button
               type="button"
               className="ml-1 p-1 rounded-full hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              onFocus={() => setShowTooltip(true)}
-              onBlur={() => setShowTooltip(false)}
-              onClick={() => setShowTooltip(v => !v)}
+              onMouseEnter={() => !isMobile && setShowTooltip(true)}
+              onMouseLeave={() => !isMobile && setShowTooltip(false)}
+              onFocus={() => !isMobile && setShowTooltip(true)}
+              onBlur={() => !isMobile && setShowTooltip(false)}
+              onClick={() => {
+                if (isMobile) {
+                  setShowMobileModal(true);
+                } else {
+                  setShowTooltip(v => !v);
+                }
+              }}
               tabIndex={0}
               aria-label="Show account info"
             >
               <Info className="w-4 h-4 text-gray-400" />
             </button>
-            {showTooltip && (
+            {showTooltip && !isMobile && (
               <div className="absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg p-3 text-xs text-gray-700 dark:text-gray-200 animate-fadein">
                 <div className="font-semibold mb-2">Total: {formatCurrency(totalBalance, currency)}</div>
                 <div className="font-medium mb-1">Accounts ({currencyAccounts.length}):</div>
@@ -262,6 +271,33 @@ export const CurrencyOverviewCard: React.FC<CurrencyOverviewCardProps> = ({
           />
         </div>
       </div>
+
+      {/* Mobile Modal for Account Info */}
+      {showMobileModal && isMobile && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowMobileModal(false)} />
+          <div className="relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg p-3 w-64 animate-fadein">
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-semibold text-gray-700 dark:text-gray-200">Total: {formatCurrency(totalBalance, currency)}</div>
+              <button
+                onClick={() => setShowMobileModal(false)}
+                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="font-medium mb-1 text-gray-700 dark:text-gray-200">Accounts ({currencyAccounts.length}):</div>
+            <ul className="space-y-1 max-h-48 overflow-y-auto">
+              {currencyAccounts.map(acc => (
+                <li key={acc.id} className="flex justify-between text-xs text-gray-700 dark:text-gray-200">
+                  <span className="truncate max-w-[120px]" title={acc.name}>{acc.name}</span>
+                  <span className="ml-2 tabular-nums">{formatCurrency(acc.calculated_balance || 0, currency)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }; 
