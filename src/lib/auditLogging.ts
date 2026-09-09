@@ -1,4 +1,18 @@
 import { supabase } from './supabase';
+import { logger } from './logger';
+import { captureError } from './sentry';
+
+// A silent audit failure is invisible until the trail is needed for recovery,
+// so surface it in dev and report it in production. Never throws: audit logging
+// must not break the write it is recording.
+const reportAuditFailure = (cause: unknown, context: string): null => {
+  const error = cause instanceof Error
+    ? cause
+    : new Error((cause as { message?: string } | null)?.message ?? String(cause));
+  logger.error(`Audit log failed (${context})`, error);
+  captureError(error, `audit:${context}`);
+  return null;
+};
 
 export interface AuditLogData {
   action_type: string;
@@ -24,15 +38,12 @@ export const createAuditLog = async (data: AuditLogData): Promise<string | null>
       });
 
     if (error) {
-
-      return null;
+      return reportAuditFailure(error, data.entity_type);
     }
-
 
     return result;
   } catch (error) {
-
-    return null;
+    return reportAuditFailure(error, data.entity_type);
   }
 };
 
@@ -47,7 +58,7 @@ export const testAuditLogging = async (): Promise<boolean> => {
     
     return result !== null;
   } catch (error) {
-
+    reportAuditFailure(error, 'test');
     return false;
   }
 };

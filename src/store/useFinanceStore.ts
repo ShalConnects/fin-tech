@@ -3059,6 +3059,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       const cleanedUpdates = { ...updates } as any;
       if (cleanedUpdates.due_date === '') cleanedUpdates.due_date = null;
       if (cleanedUpdates.partial_return_date === '') cleanedUpdates.partial_return_date = null;
+      if (cleanedUpdates.account_id === '') cleanedUpdates.account_id = null;
       
       const { data: updatedData, error } = await supabase
         .from('lend_borrow')

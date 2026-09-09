@@ -35,13 +35,15 @@ export const LendBorrowForm: React.FC<LendBorrowFormProps> = ({ record, onClose,
     type: record?.type || '',
     person_name: record?.person_name || '',
     amount: record?.amount || undefined,
-    currency: '', // Will be set automatically from selected account
+    currency: record?.currency || '',
     due_date: record?.due_date || '',
     notes: record?.notes || '',
     status: record?.status || 'active',
     partial_return_amount: record?.partial_return_amount || 0,
     partial_return_date: record?.partial_return_date || '',
-    account_id: record?.account_id || profile?.default_account_id || '',
+    // Only fall back to the default account when adding. A record-only entry has no
+    // account, and injecting one here would overwrite its currency on edit.
+    account_id: record ? (record.account_id || '') : (profile?.default_account_id || ''),
     affect_account_balance: record?.affect_account_balance ?? true,
   });
   
@@ -75,9 +77,6 @@ export const LendBorrowForm: React.FC<LendBorrowFormProps> = ({ record, onClose,
   const fieldRowClass = 'flex flex-col sm:flex-row gap-2 sm:gap-x-4 sm:items-center';
   const fieldColClass = 'flex-1';
 
-  // Currency will be automatically set from the selected account
-  // No need for currency dropdown since it comes from the account
-
   // Filter and sort accounts: only active accounts (excluding DPS), but include current account if editing
   const sortedAccountOptions = React.useMemo(() => {
     // Get active accounts (excluding DPS accounts)
@@ -110,15 +109,29 @@ export const LendBorrowForm: React.FC<LendBorrowFormProps> = ({ record, onClose,
     });
   }, [accounts, record?.account_id, profile?.local_currency]);
 
-  // Auto-set currency when account is selected
+  // The record's own currency may no longer match any account, so keep it listed
+  // to avoid silently dropping it when the record is edited.
+  const currencyOptions = React.useMemo(() => {
+    const currencies = new Set(accounts.map(acc => acc.currency));
+    if (form.currency) currencies.add(form.currency);
+    return Array.from(currencies).sort().map(currency => ({
+      value: currency,
+      label: `${currency} - ${getCurrencySymbol(currency)}`
+    }));
+  }, [accounts, form.currency]);
+
+  // Auto-set currency when account is selected. Record-only entries own their
+  // currency and must not inherit it from an account.
   useEffect(() => {
-    if (form.account_id) {
+    if (form.affect_account_balance && form.account_id) {
       const selectedAccount = accounts.find(acc => acc.id === form.account_id);
       if (selectedAccount) {
-        setForm(prev => ({ ...prev, currency: selectedAccount.currency }));
+        setForm(prev => prev.currency === selectedAccount.currency
+          ? prev
+          : { ...prev, currency: selectedAccount.currency });
       }
     }
-  }, [form.account_id, accounts]);
+  }, [form.affect_account_balance, form.account_id, accounts]);
 
   // Autofocus first field on open
   useEffect(() => {
@@ -353,16 +366,19 @@ export const LendBorrowForm: React.FC<LendBorrowFormProps> = ({ record, onClose,
       }
     }
     
-    // Ensure currency is set from the selected account (only for account-linked records)
-    if (form.affect_account_balance && form.account_id) {
-      const selectedAccount = accounts.find(acc => acc.id === form.account_id);
-      if (selectedAccount) {
-        setForm(prev => ({ ...prev, currency: selectedAccount.currency }));
-      }
-    }
-
     // Auto-set due date to 7 days from today if not provided (for all records)
     let updatedForm = { ...form };
+
+    if (form.affect_account_balance) {
+      // Ensure currency is set from the selected account (only for account-linked records)
+      const selectedAccount = accounts.find(acc => acc.id === form.account_id);
+      if (selectedAccount) {
+        updatedForm = { ...updatedForm, currency: selectedAccount.currency };
+      }
+    } else {
+      updatedForm = { ...updatedForm, account_id: '' };
+    }
+
     if (!form.due_date || form.due_date === '') {
       const sevenDaysFromNow = new Date();
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
@@ -649,14 +665,9 @@ export const LendBorrowForm: React.FC<LendBorrowFormProps> = ({ record, onClose,
                   <CustomDropdown
                     value={form.currency}
                     onChange={(value) => handleDropdownChange('currency', value)}
-                    options={Array.from(new Set(accounts.map(acc => acc.currency)))
-                      .map(currency => ({
-                        value: currency,
-                        label: `${currency} - ${getCurrencySymbol(currency)}`
-                      }))
-                    }
+                    options={currencyOptions}
                     placeholder="Select currency *"
-                    disabled={isAccountHidden || !!record}
+                    disabled={isAccountHidden}
                   />
                 )}
                 {errors.account_id && touched.account_id ? (
